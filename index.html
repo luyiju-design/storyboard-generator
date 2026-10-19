@@ -156,6 +156,34 @@ section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-w
 .summary span { min-width: 0; overflow-wrap: anywhere; }
 .summary em { font-style: normal; color: var(--accent); font-size: 13px; font-weight: 700; }
 
+.opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.opt {
+  display: grid; gap: 2px; text-align: left;
+  background: var(--soft); color: var(--ink);
+  border: 2px solid transparent; border-radius: 14px;
+  padding: 14px; font-weight: 700; font-size: 17px;
+}
+.opt[data-style=custom] { grid-column: 1 / -1; }
+.opt small { font-weight: 400; font-size: 13px; color: var(--muted); line-height: 1.4; }
+.opt[aria-pressed=true] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.hero-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--soft); border-radius: 14px; padding: 12px 14px; }
+.hero-row span { flex: 1; min-width: 12em; font-size: 15px; }
+.hero-row b { display: block; font-size: 13px; color: var(--muted); font-weight: 500; }
+.todo { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
+.todo li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; align-items: start; }
+.todo .n {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--ink); color: var(--bg);
+  display: grid; place-items: center; font-weight: 700; font-size: 15px; margin-top: 2px;
+}
+.todo .c { display: grid; gap: 10px; min-width: 0; }
+.todo .c > b { font-size: 17px; line-height: 1.5; }
+.ai-btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.ai-btns a {
+  text-align: center; text-decoration: none; font-weight: 700;
+  color: var(--accent); border: 1.5px solid var(--accent); border-radius: 999px; padding: 11px 8px;
+}
+button.copied { background: var(--ok); border-color: var(--ok); }
 .style-box { border: 1px solid var(--line); border-radius: 14px; padding: 4px 14px; }
 .style-box summary { cursor: pointer; font-weight: 700; padding: 10px 0; color: var(--accent); }
 .style-body { display: grid; gap: 10px; padding-bottom: 14px; }
@@ -228,32 +256,31 @@ section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-w
       <div class="summary" id="summary"></div>
     </div>
 
+    <div class="q" id="pStyle" hidden>
+      <div class="q-tag">選畫風</div>
+      <h2>想要哪一種畫風？</h2>
+      <div class="opts" id="styleOpts"></div>
+      <textarea id="styleText" aria-label="自己寫畫風" placeholder="例如：・像蠟筆畫的童趣風格，白色背景" hidden></textarea>
+      <div class="hero-row">
+        <span><b>主角</b><span id="heroName"></span></span>
+        <button type="button" class="ghost small" id="reroll">換一個</button>
+      </div>
+    </div>
+
     <div class="q" id="pPrompt" hidden>
       <div class="q-tag">讓 AI 畫圖</div>
       <h2>複製指令，貼到 AI</h2>
-      <p class="q-hint">貼到 ChatGPT 或 Gemini，AI 會畫出一張四格圖。畫好後把圖存到手機相簿。</p>
-      <button type="button" class="blue wide" id="copy">複製生圖指令</button>
-      <p class="toast" id="copyMsg" role="status"></p>
-      <div class="links">
-        <a href="https://chatgpt.com/" target="_blank" rel="noopener">開啟 ChatGPT</a>
-        <a href="https://gemini.google.com/" target="_blank" rel="noopener">開啟 Gemini</a>
-      </div>
-      <details class="style-box" id="styleBox">
-        <summary>調整畫風或主角</summary>
-        <div class="style-body">
-          <p class="hint">點一個風格套用，或直接修改下面的文字。改完記得重新複製指令。</p>
-          <div class="chips" id="styleChips"></div>
-          <textarea id="styleText" aria-label="畫風描述"></textarea>
-          <div class="toolbar">
-            <button type="button" class="ghost small" id="styleReset">還原預設畫風</button>
-            <button type="button" class="ghost small" id="reroll">換一個主角</button>
-          </div>
-        </div>
-      </details>
-      <details class="style-box">
-        <summary>查看完整指令</summary>
-        <div class="style-body"><pre class="prompt" id="prompt"></pre></div>
-      </details>
+      <ol class="todo">
+        <li><span class="n">1</span><div class="c"><b>複製生圖指令</b>
+          <button type="button" class="blue wide" id="copy">複製生圖指令</button>
+          <textarea id="promptFallback" readonly hidden aria-label="生圖指令"></textarea></div></li>
+        <li><span class="n">2</span><div class="c"><b>打開 AI，貼上指令送出</b>
+          <div class="ai-btns">
+            <a href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT</a>
+            <a href="https://gemini.google.com/" target="_blank" rel="noopener">Gemini</a>
+          </div></div></li>
+        <li><span class="n">3</span><div class="c"><b>畫好後，把圖存到手機相簿</b></div></li>
+      </ol>
     </div>
 
     <div class="q" id="pUpload" hidden>
@@ -272,9 +299,9 @@ section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-w
       <h2>故事板完成了！</h2>
       <p class="q-hint">分享給 host，或下載存起來。</p>
       <div class="board-out"><img id="boardImg" alt="故事板預覽"></div>
-      <button type="button" class="blue wide" id="share" hidden>分享（AirDrop／LINE／Mail）</button>
+      <button type="button" class="blue wide" id="share" hidden>分享（郵件／AirDrop／LINE）</button>
       <button type="button" class="wide" id="download">下載圖片</button>
-      <p class="tip">也可以長按上面的圖片，選「儲存到照片」或「分享」。</p>
+      <p class="tip">按「分享」後選「郵件」，圖片會自動附在信裡，填上同事信箱就能寄出。也可以長按上面的圖片儲存或分享。</p>
       <button type="button" class="link" id="restart">重新開始一組新故事</button>
     </div>
 
@@ -323,7 +350,7 @@ const LABELS = { group: "組別", scene: "場景", objects: "物件", people: "�
 const STORE = "storyboard-quiz-v2";
 const $ = (id) => document.getElementById(id);
 
-const PANELS = ["pConfirm", "pPrompt", "pUpload", "pDone"];
+const PANELS = ["pConfirm", "pStyle", "pPrompt", "pUpload", "pDone"];
 const TOTAL = QUESTIONS.length + PANELS.length;
 let ans = {}, step = 0, returnTo = null;
 try {
@@ -353,9 +380,10 @@ function renderStep(animate = true) {
   const panel = PANELS[step - QUESTIONS.length];
   $("skip").hidden = true;
   $("next").hidden = panel === "pDone";
-  $("next").textContent = { pConfirm: "沒問題，下一步", pPrompt: "拿到圖了，下一步", pUpload: "下一步" }[panel] || "";
+  $("next").textContent = { pConfirm: "沒問題，下一步", pStyle: "下一步", pPrompt: "拿到圖了，下一步", pUpload: "下一步" }[panel] || "";
   if (panel === "pConfirm") renderSummary();
-  if (panel === "pPrompt") { renderStyle(); refreshPrompt(); }
+  if (panel === "pStyle") renderStyle();
+  if (panel === "pPrompt") { $("promptFallback").hidden = true; resetCopy(); }
   if (panel === "pDone") render();
 }
 
@@ -469,40 +497,46 @@ function values() {
   const v = {}; Object.keys(LABELS).forEach((k) => { v[k] = (ans[k] || "").trim(); }); return v;
 }
 
-// 主角：網頁隨機抽一位寫進指令，讓每組的角色不一樣
-// 畫風：可選預設，也可自己改
+// 畫風：四種預設，或自己寫
 const STYLES = [
-  { name: "手繪草圖", text: [
+  { name: "手繪草圖", desc: "潦草的筆記本草圖（推薦）", text: [
     "・像設計師在筆記本上用黑色簽字筆快速畫的故事板草圖：線條潦草隨性、有點歪斜、看得出手繪筆觸，白色背景。",
     "・人物是簡筆畫的卡通小人：有簡單的髮型和衣服輪廓，臉用點點眼睛和簡單線條畫出表情；不要畫成火柴人，也不要精緻的漫畫或寫實風格。",
     "・只用黑色線條，不上色、不要灰階陰影或網點。"] },
-  { name: "火柴人", text: [
+  { name: "火柴人", desc: "最簡單的線條小人", text: [
     "・黑白手繪線條插畫，像用黑色簽字筆畫在白紙上，白色背景。",
     "・人物是簡單的圓頭火柴人，用表情和動作表現情緒，不上色、不要灰階陰影。"] },
-  { name: "漫畫線稿", text: [
+  { name: "漫畫線稿", desc: "日系漫畫的黑白線稿", text: [
     "・日系四格漫畫風格的黑白線稿，線條乾淨，白色背景，可以有少量灰色陰影，不要寫實照片感。",
     "・人物是有五官、髮型和清楚表情的漫畫角色。"] },
-  { name: "淡彩插畫", text: [
+  { name: "淡彩插畫", desc: "柔和的彩色繪本風", text: [
     "・溫暖的手繪淡彩插畫，像繪本一樣，白色背景，顏色柔和不刺眼。",
     "・人物是可愛的卡通角色，有清楚的表情，不要寫實照片感。"] },
-].map((st) => ({ name: st.name, text: st.text.join("\n") }));
-const styleText = () => (typeof ans.style === "string" ? ans.style : STYLES[0].text);
+].map((st) => ({ ...st, text: st.text.join("\n") }));
+const styleText = () => (typeof ans.style === "string" && ans.style.trim() ? ans.style : STYLES[0].text);
 
 function renderStyle() {
-  const cur = styleText();
-  $("styleText").value = cur;
-  $("styleChips").innerHTML = STYLES.map((st, i) =>
-    `<button type="button" class="chip" data-style="${i}" aria-pressed="${st.text === cur}">${esc(st.name)}</button>`).join("");
-  $("styleChips").querySelectorAll("[data-style]").forEach((b) => b.addEventListener("click", () => {
-    ans.style = STYLES[+b.dataset.style].text; persist(); renderStyle(); refreshPrompt();
+  const cur = typeof ans.style === "string" ? ans.style : STYLES[0].text;
+  const preset = STYLES.findIndex((st) => st.text === cur);
+  const custom = preset < 0 || ans.customStyle;
+  $("styleOpts").innerHTML = STYLES.map((st, i) =>
+    `<button type="button" class="opt" data-style="${i}" aria-pressed="${!custom && i === preset}">${esc(st.name)}<small>${esc(st.desc)}</small></button>`).join("") +
+    `<button type="button" class="opt" data-style="custom" aria-pressed="${custom}">自己寫<small>用文字描述想要的畫風</small></button>`;
+  $("styleOpts").querySelectorAll("[data-style]").forEach((b) => b.addEventListener("click", () => {
+    if (b.dataset.style === "custom") {
+      ans.customStyle = true;
+      renderStyle(); $("styleText").focus();
+    } else {
+      ans.style = STYLES[+b.dataset.style].text; delete ans.customStyle;
+      renderStyle();
+    }
+    persist();
   }));
+  $("styleText").hidden = !custom;
+  if (custom && document.activeElement !== $("styleText")) $("styleText").value = preset < 0 ? cur : "";
+  $("heroName").textContent = hero();
 }
-function refreshPrompt() { $("prompt").textContent = buildPrompt(values()); }
-$("styleText").addEventListener("input", () => {
-  ans.style = $("styleText").value; persist(); refreshPrompt();
-  $("styleChips").querySelectorAll("[data-style]").forEach((b) => b.setAttribute("aria-pressed", STYLES[+b.dataset.style].text === ans.style));
-});
-$("styleReset").addEventListener("click", () => { delete ans.style; persist(); renderStyle(); refreshPrompt(); });
+$("styleText").addEventListener("input", () => { ans.style = $("styleText").value; ans.customStyle = true; persist(); });
 
 const HEROES = [
   "綁馬尾的年輕女生，穿白襯衫、掛識別證",
@@ -521,9 +555,7 @@ function hero() {
 function rerollHero() {
   let n; do { n = Math.floor(Math.random() * HEROES.length); } while (n === ans.hero);
   ans.hero = n; persist();
-  $("prompt").textContent = buildPrompt(values());
-  $("copyMsg").textContent = `換好了：${HEROES[n]}，請重新複製指令`;
-  setTimeout(() => { $("copyMsg").textContent = ""; }, 4000);
+  $("heroName").textContent = HEROES[n];
 }
 
 // 生圖指令
@@ -744,7 +776,6 @@ function drawBoard(v) {
 let lastBlob = null, renderSeq = 0;
 async function render() {
   const v = values();
-  $("prompt").textContent = buildPrompt(v);
   const seq = ++renderSeq;
   // 先載入畫布要用到的字形，避免第一次畫成系統字
   const text = Object.values(v).join("") + STAGES.map((s) => s.name + s.q).join("") + "活動故事板場景物件人物上傳圖片後會放在這裡的我第組";
@@ -784,15 +815,28 @@ $("download").addEventListener("click", () => {
 });
 
 $("reroll").addEventListener("click", rerollHero);
+let copyTimer = 0;
+function resetCopy() { clearTimeout(copyTimer); $("copy").classList.remove("copied"); $("copy").textContent = "複製生圖指令"; }
 $("copy").addEventListener("click", async () => {
-  const text = $("prompt").textContent;
-  try { await navigator.clipboard.writeText(text); $("copyMsg").textContent = "已複製，打開 ChatGPT 或 Gemini 貼上就好"; }
+  const text = buildPrompt(values());
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; }
   catch (e) {
-    const r = document.createRange(); r.selectNodeContents($("prompt"));
-    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
-    $("copyMsg").textContent = "已幫你選取指令，請按「拷貝」";
+    const t = document.createElement("textarea");
+    t.value = text; t.setAttribute("readonly", ""); t.style.cssText = "position:fixed;top:0;left:-9999px";
+    document.body.appendChild(t); t.select();
+    try { ok = document.execCommand("copy"); } catch (e2) {}
+    t.remove();
   }
-  setTimeout(() => { $("copyMsg").textContent = ""; }, 4000);
+  if (ok) {
+    $("copy").classList.add("copied"); $("copy").textContent = "已複製 ✓";
+    clearTimeout(copyTimer); copyTimer = setTimeout(resetCopy, 3000);
+  } else {
+    // 真的複製不了：把指令秀出來讓學員自己長按拷貝
+    const f = $("promptFallback");
+    f.value = text; f.hidden = false; f.focus(); f.select();
+    $("copy").textContent = "請長按下方文字，選「全選」再「拷貝」";
+  }
 });
 
 // 圖片不會存下來，重新整理後若停在完成頁，退回上傳那一步
