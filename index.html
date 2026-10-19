@@ -183,6 +183,13 @@ section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-w
   text-align: center; text-decoration: none; font-weight: 700;
   color: var(--accent); border: 1.5px solid var(--accent); border-radius: 999px; padding: 11px 8px;
 }
+.mail-to { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; background: var(--accent-soft); border-radius: 12px; padding: 12px 14px; }
+.mail-label { font-size: 13px; color: var(--muted); width: 100%; }
+.mail-addr { flex: 1 1 auto; min-width: 0; font-size: 17px; font-weight: 700; overflow-wrap: anywhere; user-select: all; -webkit-user-select: all; }
+.mail-to button { flex: 0 0 auto; }
+#noShare { display: grid; gap: 10px; }
+.mail-steps { margin: 0; padding-left: 22px; display: grid; gap: 6px; font-size: 15px; line-height: 1.6; color: var(--ink); }
+.btn-link { display: block; text-align: center; text-decoration: none; color: var(--accent); border: 1px solid var(--line); border-radius: 12px; padding: 12px; font-weight: 600; }
 button.copied { background: var(--ok); border-color: var(--ok); }
 .style-box { border: 1px solid var(--line); border-radius: 14px; padding: 4px 14px; }
 .style-box summary { cursor: pointer; font-weight: 700; padding: 10px 0; color: var(--accent); }
@@ -299,11 +306,24 @@ button.copied { background: var(--ok); border-color: var(--ok); }
     <div class="q" id="pDone" hidden>
       <div class="q-tag">完成</div>
       <h2>故事板完成了！</h2>
-      <p class="q-hint">分享給 host，或下載存起來。</p>
+      <p class="q-hint">把故事板寄給 host。</p>
       <div class="board-out"><img id="boardImg" alt="故事板預覽"></div>
-      <button type="button" class="blue wide" id="share" hidden>分享（郵件／AirDrop／LINE）</button>
-      <button type="button" class="wide" id="download">下載圖片</button>
-      <p class="tip">按「分享」後選「郵件」，圖片會自動附在信裡，填上同事信箱就能寄出。也可以長按上面的圖片儲存或分享。</p>
+      <div class="mail-to">
+        <span class="mail-label">寄給 host</span>
+        <span class="mail-addr" id="hostMail"></span>
+        <button type="button" id="copyMail">複製信箱</button>
+      </div>
+      <button type="button" class="blue wide" id="share" hidden>用郵件寄出</button>
+      <ol class="mail-steps" id="shareSteps" hidden>
+        <li>按「用郵件寄出」，選「郵件」（Mail 或 Gmail）</li>
+        <li>在收件人欄長按「貼上」（信箱已自動複製）</li>
+        <li>圖片已自動附在信裡，按送出</li>
+      </ol>
+      <div id="noShare" hidden>
+        <button type="button" class="blue wide" id="download">下載圖片</button>
+        <a class="wide btn-link" id="mailLink">打開郵件，附上剛下載的圖片</a>
+      </div>
+      <p class="tip">寄不出去的話，也可以長按上面的圖片儲存，再用 LINE 或 AirDrop 傳給 host。</p>
       <button type="button" class="link" id="restart">重新開始一組新故事</button>
     </div>
 
@@ -352,6 +372,7 @@ const LABELS = { group: "組別", scene: "場景", objects: "物件", people: "�
 const STORE = "storyboard-quiz-v2";
 const $ = (id) => document.getElementById(id);
 
+const HOST_EMAIL = "Phoebe.Chen@ibm.com";
 const PANELS = ["pConfirm", "pPrompt", "pUpload", "pDone"];
 const TOTAL = QUESTIONS.length + PANELS.length;
 let ans = {}, step = 0, returnTo = null;
@@ -803,12 +824,35 @@ function fileName() {
 function boardFile() { return lastBlob ? new File([lastBlob], fileName(), { type: "image/png" }) : null; }
 function updateShare() {
   const f = boardFile();
-  $("share").hidden = !(f && navigator.canShare && navigator.canShare({ files: [f] }));
+  const can = !!(f && navigator.canShare && navigator.canShare({ files: [f] }));
+  $("share").hidden = !can; $("shareSteps").hidden = !can; $("noShare").hidden = can;
+  $("mailLink").href = `mailto:${HOST_EMAIL}?subject=${encodeURIComponent(mailSubject())}`;
 }
 
 $("share").addEventListener("click", async () => {
   const f = boardFile(); if (!f) return;
-  try { await navigator.share({ files: [f], title: "AI 故事板" }); } catch (e) {}
+  copyText(HOST_EMAIL);
+  try { await navigator.share({ files: [f], title: mailSubject(), text: mailSubject() }); } catch (e) {}
+});
+function mailSubject() { return fileName().replace(/\.png$/, ""); }
+function copyText(text) {
+  const fallback = () => {
+    const t = document.createElement("textarea");
+    t.value = text; t.setAttribute("readonly", ""); t.style.cssText = "position:fixed;top:0;left:-9999px";
+    document.body.appendChild(t); t.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+    t.remove(); return ok;
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(() => true, fallback);
+  return Promise.resolve(fallback());
+}
+$("hostMail").textContent = HOST_EMAIL;
+$("copyMail").addEventListener("click", async () => {
+  const b = $("copyMail");
+  const ok = await copyText(HOST_EMAIL);
+  b.textContent = ok ? "已複製 ✓" : "請長按信箱複製";
+  b.classList.toggle("copied", ok);
+  setTimeout(() => { b.textContent = "複製信箱"; b.classList.remove("copied"); }, 3000);
 });
 $("download").addEventListener("click", () => {
   if (!lastBlob) return;
