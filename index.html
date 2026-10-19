@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
 <style>
-/* 版面：單欄手機流程，四個步驟由上而下；配色沿用工作坊簡報（白底、墨黑膠囊、亮藍強調） */
+/* 版面：手機單欄。前半段一次一題的問答，後半段是結果頁（指令、上傳、故事板、分享）；配色沿用工作坊簡報 */
 :root {
   --bg: #ffffff;
   --ink: #141519;
@@ -16,12 +16,15 @@
   --line: #dfe2ea;
   --soft: #f4f6fb;
   --accent: #2b5ce6;
+  --accent-soft: #e8eefd;
   --accent-ink: #ffffff;
   --ok: #1d8a52;
+  --warn: #c2412d;
   --font: "Noto Sans TC", "PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
@@ -43,28 +46,97 @@ body::after {
 .wrap {
   max-width: 640px;
   margin: 0 auto;
-  padding-block: 28px 64px;
+  padding-block: 24px 64px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 28px;
+  gap: 24px;
 }
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
 .brand svg { width: 20px; height: 20px; color: var(--accent); }
 .pill {
   display: inline-block;
   background: var(--ink); color: var(--bg);
-  border-radius: 999px; padding: 4px 18px;
-  font-weight: 700; font-size: 15px;
+  border-radius: 999px; padding: 3px 16px;
+  font-weight: 700; font-size: 14px;
 }
-h1 { margin: 10px 0 6px; font-size: clamp(32px, 9vw, 44px); font-weight: 900; line-height: 1.15; text-wrap: balance; }
-.lead { margin: 0; color: var(--muted); }
-.lead b { color: var(--accent); }
+.title-row { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+h1 { margin: 0; font-size: clamp(26px, 7vw, 34px); font-weight: 900; line-height: 1.2; }
 
-section, .card, .field { min-width: 0; }
-section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
-.step-head { display: flex; align-items: baseline; gap: 10px; }
+/* 問答 */
+.quiz { display: grid; gap: 22px; min-width: 0; }
+.progress { display: grid; gap: 8px; }
+.progress-top { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); font-weight: 500; }
+.bar { height: 8px; background: var(--soft); border-radius: 999px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 999px; transition: width .3s ease; }
+.q { display: grid; gap: 16px; min-width: 0; }
+.q-tag { color: var(--accent); font-weight: 700; font-size: 15px; }
+.q h2 { margin: 0; font-size: clamp(24px, 6.5vw, 30px); font-weight: 900; line-height: 1.35; text-wrap: balance; }
+.q-hint { margin: -6px 0 0; color: var(--muted); font-size: 15px; }
+.q-enter { animation: qin .28s ease both; }
+@keyframes qin { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+
+.nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.nums button {
+  aspect-ratio: 1.3;
+  font-size: 22px; font-weight: 700;
+  border-radius: 14px;
+  background: var(--soft); color: var(--ink); border: 2px solid transparent;
+  padding: 0;
+}
+.nums button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: inherit; font-size: 15px; font-weight: 500;
+  border-radius: 999px; padding: 8px 14px;
+  background: var(--bg); color: var(--ink);
+  border: 1.5px solid var(--line);
+  cursor: pointer;
+}
+.chip[aria-pressed=true] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 700; }
+
+input[type=text], textarea {
+  width: 100%;
+  font: inherit; font-size: 17px;
+  color: var(--ink);
+  background: var(--soft);
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+::placeholder { color: #9a9fb0; }
+input:focus, textarea:focus, button:focus-visible, .upload:focus-within {
+  outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  outline-offset: 1px;
+}
+.err { margin: 0; min-height: 1.4em; color: var(--warn); font-size: 14px; font-weight: 700; }
+
+.nav { display: flex; gap: 10px; align-items: center; }
+.nav .grow { flex: 1; }
+button {
+  font: inherit; font-weight: 700;
+  border-radius: 999px;
+  padding: 12px 22px;
+  cursor: pointer;
+  border: 1.5px solid var(--ink);
+  background: var(--ink); color: var(--bg);
+}
+button.blue { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+button.link { background: none; border: none; color: var(--muted); padding: 12px 8px; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+button.small { padding: 6px 14px; font-size: 14px; }
+button.wide { width: 100%; padding: 15px; font-size: 17px; }
+button[disabled] { opacity: .4; cursor: default; }
+
+/* 結果頁 */
+.result { display: grid; gap: 30px; min-width: 0; }
+.done-head h2 { margin: 0 0 4px; font-size: 26px; font-weight: 900; }
+.done-head p { margin: 0; color: var(--muted); }
+section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+.step-head { display: flex; align-items: center; gap: 10px; }
 .step-no {
   flex: none;
   width: 28px; height: 28px; border-radius: 50%;
@@ -72,53 +144,20 @@ section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
   display: grid; place-items: center;
   font-weight: 700; font-size: 14px;
 }
-h2 { margin: 0; font-size: 20px; font-weight: 700; }
+.step-head h3 { margin: 0; font-size: 19px; font-weight: 700; }
 .hint { margin: 0; color: var(--muted); font-size: 14px; }
 
-.card {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 16px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
-  background: var(--bg);
+.summary { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.summary button {
+  display: grid; grid-template-columns: 4.5em minmax(0, 1fr) auto; gap: 10px; align-items: baseline;
+  width: 100%; text-align: left;
+  background: var(--bg); color: var(--ink); border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
+  padding: 12px 14px; font-weight: 400; font-size: 15px;
 }
-.field { display: grid; gap: 6px; }
-label { font-weight: 700; font-size: 15px; }
-label small { font-weight: 400; color: var(--muted); margin-left: 4px; }
-input[type=text], textarea {
-  width: 100%;
-  font: inherit;
-  color: var(--ink);
-  background: var(--soft);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 10px 12px;
-}
-textarea { resize: vertical; min-height: 64px; }
-input:focus, textarea:focus, button:focus-visible, .upload:focus-within {
-  outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
-  outline-offset: 1px;
-}
-.row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
-@media (max-width: 420px) { .row2 { grid-template-columns: 1fr; } }
-
-.stage-tag { color: var(--accent); }
-
-.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-button {
-  font: inherit; font-weight: 700;
-  border-radius: 999px;
-  padding: 11px 20px;
-  cursor: pointer;
-  border: 1px solid var(--ink);
-  background: var(--ink); color: var(--bg);
-}
-button.blue { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
-button.small { padding: 6px 14px; font-size: 14px; }
-button[disabled] { opacity: .45; cursor: default; }
+.summary button:last-child { border-bottom: 0; }
+.summary b { color: var(--muted); font-weight: 500; font-size: 14px; }
+.summary span { min-width: 0; overflow-wrap: anywhere; }
+.summary em { font-style: normal; color: var(--accent); font-size: 13px; font-weight: 700; }
 
 .prompt {
   margin: 0;
@@ -126,17 +165,18 @@ button[disabled] { opacity: .45; cursor: default; }
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 14px;
-  font-size: 13px;
-  line-height: 1.7;
+  font: 13px/1.7 var(--font);
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 260px;
+  max-height: 220px;
   overflow: auto;
-  user-select: all;
   -webkit-user-select: all;
+  user-select: all;
 }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .links { display: flex; flex-wrap: wrap; gap: 8px; font-size: 14px; }
-.links a { color: var(--accent); font-weight: 700; text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; }
+.links a { color: var(--accent); font-weight: 700; text-decoration: none; border: 1.5px solid var(--line); border-radius: 999px; padding: 7px 14px; }
+.toast { min-height: 1.4em; margin: 0; font-size: 14px; color: var(--ok); font-weight: 700; }
 
 .upload {
   position: relative;
@@ -151,24 +191,13 @@ button[disabled] { opacity: .45; cursor: default; }
 .upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
 .upload.has { border-style: solid; border-color: var(--ok); }
 .upload.has strong { color: var(--ok); }
+.tip { margin: 0; font-size: 14px; color: var(--muted); background: var(--soft); border-radius: 10px; padding: 10px 12px; }
 
-.board-out {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-  background: #fff;
-}
+.board-out { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; }
 .board-out img { display: block; width: 100%; height: auto; }
-.toast { min-height: 1.4em; margin: 0; font-size: 14px; color: var(--ok); font-weight: 700; }
-.tip {
-  margin: 0;
-  font-size: 14px;
-  color: var(--muted);
-  background: var(--soft);
-  border-radius: 10px;
-  padding: 10px 12px;
-}
-@media (prefers-reduced-motion: no-preference) { button { transition: transform .1s; } button:active { transform: scale(.97); } }
+
+@media (prefers-reduced-motion: reduce) { .q-enter { animation: none; } .bar i { transition: none; } }
+@media (prefers-reduced-motion: no-preference) { button:active { transform: scale(.97); } }
 </style>
 </head>
 <body>
@@ -179,99 +208,234 @@ button[disabled] { opacity: .45; cursor: default; }
       <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 1l2.1 3.6 4.1-.9-.6 4.1L21.3 10l-2.9 3 1.3 3.9-4.1.4L14 21l-2-3.6L10 21l-1.6-3.7-4.1-.4L5.6 13 2.7 10l3.7-2.2-.6-4.1 4.1.9z"/></svg>
       Design Thinking for AI
     </div>
-    <div style="margin-top:22px"><span class="pill">活動 10</span></div>
-    <h1>繪製 AI 故事板</h1>
-    <p class="lead">寫下四個階段，讓 AI 幫你畫圖，<b>圖像搭配文字描述</b>，讓大家都能直覺看懂。</p>
+    <div class="title-row"><span class="pill">活動 10</span><h1>繪製 AI 故事板</h1></div>
   </header>
 
-  <!-- 步驟 1 -->
-  <section aria-labelledby="h1">
-    <div class="step-head"><span class="step-no">1</span><h2 id="h1">寫下你的故事</h2></div>
-    <p class="hint">已先放入一組銀行的範例，直接改成你們的內容即可。</p>
-    <div class="card">
-      <div class="row2">
-        <div class="field"><label for="who">組別／姓名 <small>選填</small></label><input type="text" id="who" placeholder="例如：第 3 組 小美"></div>
-        <div class="field"><label for="scene">場景</label><input type="text" id="scene" placeholder="例如：OO 銀行裡"></div>
+  <!-- 問答 -->
+  <div class="quiz" id="quiz">
+    <div class="progress">
+      <div class="progress-top"><span id="pLabel"></span><span id="pCount"></span></div>
+      <div class="bar"><i id="pBar"></i></div>
+    </div>
+    <div class="q" id="q"></div>
+    <p class="err" id="err" role="alert"></p>
+    <div class="nav">
+      <button type="button" class="ghost" id="prev">上一題</button>
+      <span class="grow"></span>
+      <button type="button" class="link" id="skip" hidden>跳過</button>
+      <button type="button" class="blue" id="next">下一題</button>
+    </div>
+  </div>
+
+  <!-- 結果 -->
+  <div class="result" id="result" hidden>
+    <div class="done-head">
+      <h2>故事完成了！</h2>
+      <p>接下來讓 AI 幫你畫圖。想改哪一題，點一下就能回去修改。</p>
+    </div>
+    <div class="summary" id="summary"></div>
+
+    <section aria-labelledby="h1s">
+      <div class="step-head"><span class="step-no">1</span><h3 id="h1s">複製指令，貼到 AI 生圖</h3></div>
+      <p class="hint">貼到 ChatGPT 或 Gemini，AI 會畫出一張四格圖。把圖存到手機相簿。</p>
+      <pre class="prompt" id="prompt"></pre>
+      <div class="toolbar">
+        <button type="button" class="blue" id="copy">複製生圖指令</button>
+        <div class="links">
+          <a href="https://chatgpt.com/" target="_blank" rel="noopener">開啟 ChatGPT</a>
+          <a href="https://gemini.google.com/" target="_blank" rel="noopener">開啟 Gemini</a>
+        </div>
       </div>
-      <div class="field"><label for="objects">該場景有什麼物件</label><input type="text" id="objects" placeholder="例如：取號機、手機、椅子"></div>
-      <div class="field"><label for="people">人物有誰</label><input type="text" id="people" placeholder="例如：警衛、行員、其他客人"></div>
-    </div>
-    <div class="card" id="stages"></div>
-    <div class="toolbar"><button type="button" class="ghost small" id="clear">清空重寫</button></div>
-  </section>
+      <p class="toast" id="copyMsg" role="status"></p>
+    </section>
 
-  <!-- 步驟 2 -->
-  <section aria-labelledby="h2">
-    <div class="step-head"><span class="step-no">2</span><h2 id="h2">複製指令，貼到 AI 生圖</h2></div>
-    <p class="hint">貼到 ChatGPT 或 Gemini，AI 會畫出一張四格圖。把圖存到手機相簿。</p>
-    <pre class="prompt" id="prompt"></pre>
-    <div class="toolbar">
-      <button type="button" class="blue" id="copy">複製生圖指令</button>
-      <div class="links">
-        <a href="https://chatgpt.com/" target="_blank" rel="noopener">開啟 ChatGPT</a>
-        <a href="https://gemini.google.com/" target="_blank" rel="noopener">開啟 Gemini</a>
+    <section aria-labelledby="h2s">
+      <div class="step-head"><span class="step-no">2</span><h3 id="h2s">上傳 AI 畫好的四格圖</h3></div>
+      <label class="upload" id="drop">
+        <strong id="dropTitle">點這裡選擇圖片</strong>
+        <span id="dropSub">網頁會自動切成四格，配上你的文字</span>
+        <input type="file" id="file" accept="image/*">
+      </label>
+      <p class="tip">切得歪掉或對不齊？回到 AI 說「請重畫，四格大小一樣、每格都有黑色外框」，再上傳一次。</p>
+    </section>
+
+    <section aria-labelledby="h3s">
+      <div class="step-head"><span class="step-no">3</span><h3 id="h3s">完成，分享給 host</h3></div>
+      <div class="board-out"><img id="boardImg" alt="故事板預覽"></div>
+      <div class="toolbar">
+        <button type="button" class="blue" id="share" hidden>分享（AirDrop／LINE／Mail）</button>
+        <button type="button" id="download">下載圖片</button>
       </div>
-    </div>
-    <p class="toast" id="copyMsg" role="status"></p>
-  </section>
+      <p class="tip">也可以長按上面的圖片，選「儲存到照片」或「分享」。</p>
+    </section>
 
-  <!-- 步驟 3 -->
-  <section aria-labelledby="h3">
-    <div class="step-head"><span class="step-no">3</span><h2 id="h3">上傳 AI 畫好的四格圖</h2></div>
-    <label class="upload" id="drop">
-      <strong id="dropTitle">點這裡選擇圖片</strong>
-      <span id="dropSub">網頁會自動切成四格，配上你的文字</span>
-      <input type="file" id="file" accept="image/*">
-    </label>
-    <p class="tip">切得歪掉或對不齊？回到 AI 說「請重畫，四格大小一樣、每格都有黑色外框」，再上傳一次。</p>
-  </section>
-
-  <!-- 步驟 4 -->
-  <section aria-labelledby="h4">
-    <div class="step-head"><span class="step-no">4</span><h2 id="h4">完成，分享給 host</h2></div>
-    <div class="board-out"><img id="boardImg" alt="故事板預覽"></div>
-    <div class="toolbar">
-      <button type="button" class="blue" id="share" hidden>分享（AirDrop／LINE／Mail）</button>
-      <button type="button" id="download">下載圖片</button>
-    </div>
-    <p class="tip">也可以長按上面的圖片，選「儲存到照片」或「分享」。</p>
-  </section>
+    <button type="button" class="link" id="restart">重新開始一組新故事</button>
+  </div>
 
 </main>
 
 <canvas id="board" hidden></canvas>
 
 <script>
+// 題目
 const STAGES = [
-  { key: "s1", name: "情境", q: "在做什麼的時候", pos: "左上", ex: "在銀行臨櫃等待叫號" },
-  { key: "s2", name: "痛點", q: "發生了什麼問題", pos: "右上", ex: "很焦慮不知道要等多久" },
-  { key: "s3", name: "AI 介入", q: "AI 怎麼幫忙", pos: "左下", ex: "手機收到 AI 通知：前面還有 8 位，約 12 分鐘" },
-  { key: "s4", name: "結果", q: "最後變得怎麼樣", pos: "右下", ex: "安心去買杯咖啡，回來剛好輪到自己" },
+  { key: "s1", name: "情境", q: "在做什麼的時候", pos: "左上" },
+  { key: "s2", name: "痛點", q: "發生了什麼問題", pos: "右上" },
+  { key: "s3", name: "AI 介入", q: "AI 怎麼幫忙", pos: "左下" },
+  { key: "s4", name: "結果", q: "最後變得怎麼樣", pos: "右下" },
 ];
-const EXAMPLE = { who: "", scene: "OO 銀行裡", objects: "取號機、手機、椅子、顯示螢幕", people: "警衛、行員、其他客人",
-  s1: STAGES[0].ex, s2: STAGES[1].ex, s3: STAGES[2].ex, s4: STAGES[3].ex };
-const FIELDS = ["who", "scene", "objects", "people", "s1", "s2", "s3", "s4"];
-const STORE = "storyboard-draft-v1";
-
+const QUESTIONS = [
+  { key: "group", tag: "開始之前", title: "你們是第幾組？", type: "group", required: true },
+  { key: "scene", tag: "故事設定", title: "故事發生在哪裡？", type: "text", required: true,
+    hint: "點一個選項，或自己輸入", ph: "例如：銀行法遵部辦公室",
+    chips: ["銀行臨櫃", "法遵部辦公室", "客服中心", "分行 ATM 區", "在家用手機 App", "會議室"] },
+  { key: "objects", tag: "故事設定", title: "場景裡有哪些東西？", type: "multi",
+    hint: "可以複選，也可以自己補充", ph: "例如：電腦、法規文件、資料夾",
+    chips: ["電腦", "手機", "文件資料夾", "成堆的文件", "取號機", "顯示螢幕", "椅子", "印表機", "白板"] },
+  { key: "people", tag: "故事設定", title: "故事裡有誰？", type: "multi",
+    hint: "可以複選，也可以自己補充", ph: "例如：法遵人員、業務同事",
+    chips: ["行員", "客戶", "主管", "同事", "法遵人員", "業務同事", "客服人員", "警衛"] },
+  { key: "s1", tag: "第 1 格・情境", title: "主角在做什麼的時候？", type: "long", required: true,
+    ph: "例如：業務同事來問新商品是否合規，法遵人員要查相關法規" },
+  { key: "s2", tag: "第 2 格・痛點", title: "這時候遇到了什麼問題？", type: "long", required: true,
+    ph: "例如：內外部法規分散各處，翻文件、找系統花了一整個下午" },
+  { key: "s3", tag: "第 3 格・AI 介入", title: "AI 怎麼幫上忙？", type: "long", required: true,
+    ph: "例如：在 AI 法規助理輸入問題，幾秒內列出相關法條和內部規章出處" },
+  { key: "s4", tag: "第 4 格・結果", title: "最後變得怎麼樣？", type: "long", required: true,
+    ph: "例如：快速核對出處後回覆同事，省下的時間拿去做專業判斷" },
+];
+const LABELS = { group: "組別", scene: "場景", objects: "物件", people: "人物", s1: "情境", s2: "痛點", s3: "AI 介入", s4: "結果" };
+const STORE = "storyboard-quiz-v2";
 const $ = (id) => document.getElementById(id);
 
-// 四格輸入框
-$("stages").innerHTML = STAGES.map((s, i) => `
-  <div class="field">
-    <label for="${s.key}"><span class="stage-tag">${i + 1}．${s.name}</span>：${s.q}</label>
-    <textarea id="${s.key}" rows="2"></textarea>
-  </div>`).join("");
+let ans = {}, step = 0, done = false;
+try {
+  const saved = JSON.parse(localStorage.getItem(STORE));
+  if (saved) { ans = saved.ans || {}; step = saved.step || 0; done = !!saved.done; }
+} catch (e) {}
+function persist() {
+  try { localStorage.setItem(STORE, JSON.stringify({ ans, step, done })); } catch (e) {}
+}
 
-function load() {
-  let data = EXAMPLE;
-  try { const saved = JSON.parse(localStorage.getItem(STORE)); if (saved) data = saved; } catch (e) {}
-  FIELDS.forEach((f) => { $(f).value = data[f] || ""; });
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const splitList = (s) => (s || "").split(/[、,，]\s*/).map((t) => t.trim()).filter(Boolean);
+
+function renderQuestion(animate = true) {
+  const q = QUESTIONS[step];
+  $("pLabel").textContent = "故事板問答";
+  $("pCount").textContent = `${step + 1} / ${QUESTIONS.length}`;
+  $("pBar").style.width = `${((step + 1) / QUESTIONS.length) * 100}%`;
+  $("err").textContent = "";
+  $("prev").style.visibility = step === 0 ? "hidden" : "visible";
+  $("skip").hidden = !!q.required;
+  $("next").textContent = step === QUESTIONS.length - 1 ? "完成" : "下一題";
+  $("next").hidden = q.type === "group";
+
+  const val = ans[q.key] || "";
+  let body = `<div class="q-tag">${esc(q.tag)}</div><h2 id="qt">${esc(q.title)}</h2>`;
+  if (q.hint) body += `<p class="q-hint">${esc(q.hint)}</p>`;
+  if (q.type === "group") {
+    body += `<div class="nums" role="group" aria-labelledby="qt">` +
+      Array.from({ length: 16 }, (_, i) => `<button type="button" data-n="${i + 1}" aria-pressed="${val == i + 1}">${i + 1}</button>`).join("") +
+      `</div>`;
+  } else {
+    if (q.chips) {
+      const picked = q.type === "multi" ? splitList(val) : [val];
+      body += `<div class="chips">` + q.chips.map((c) =>
+        `<button type="button" class="chip" data-chip="${esc(c)}" aria-pressed="${picked.includes(c)}">${esc(c)}</button>`).join("") + `</div>`;
+    }
+    body += q.type === "long"
+      ? `<textarea id="qa" aria-labelledby="qt" placeholder="${esc(q.ph)}">${esc(val)}</textarea>`
+      : `<input type="text" id="qa" aria-labelledby="qt" placeholder="${esc(q.ph)}" value="${esc(val)}" enterkeyhint="next">`;
+  }
+  const box = $("q");
+  box.innerHTML = body;
+  box.classList.remove("q-enter");
+  if (animate) { void box.offsetWidth; box.classList.add("q-enter"); }
+
+  if (q.type === "group") {
+    box.querySelectorAll("[data-n]").forEach((b) => b.addEventListener("click", () => {
+      ans.group = b.dataset.n; persist(); go(1);
+    }));
+    return;
+  }
+  const input = $("qa");
+  input.addEventListener("input", () => {
+    ans[q.key] = input.value; persist(); $("err").textContent = "";
+    syncChips(q, input.value);
+  });
+  if (q.type !== "long") input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); go(1); } });
+  box.querySelectorAll("[data-chip]").forEach((b) => b.addEventListener("click", () => {
+    const c = b.dataset.chip;
+    if (q.type === "multi") {
+      const list = splitList(input.value);
+      const i = list.indexOf(c);
+      if (i >= 0) list.splice(i, 1); else list.push(c);
+      input.value = list.join("、");
+    } else {
+      input.value = c;
+    }
+    ans[q.key] = input.value; persist(); $("err").textContent = "";
+    syncChips(q, input.value);
+  }));
 }
-function save() {
-  try { localStorage.setItem(STORE, JSON.stringify(values())); } catch (e) {}
+function syncChips(q, v) {
+  const picked = q.type === "multi" ? splitList(v) : [v.trim()];
+  $("q").querySelectorAll("[data-chip]").forEach((b) => b.setAttribute("aria-pressed", picked.includes(b.dataset.chip)));
 }
+
+function go(dir) {
+  const q = QUESTIONS[step];
+  if (dir > 0 && q.required && !(ans[q.key] || "").trim()) {
+    $("err").textContent = q.type === "group" ? "請點選你們的組別" : "這題要填喔，可以參考框裡的例子";
+    return;
+  }
+  if (dir > 0 && step === QUESTIONS.length - 1) { finish(); return; }
+  step = Math.max(0, Math.min(QUESTIONS.length - 1, step + dir));
+  persist();
+  renderQuestion();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+$("next").addEventListener("click", () => go(1));
+$("prev").addEventListener("click", () => go(-1));
+$("skip").addEventListener("click", () => { ans[QUESTIONS[step].key] = ""; go(1); });
+
+function showQuiz(at) {
+  done = false; step = at; persist();
+  $("result").hidden = true; $("quiz").hidden = false;
+  renderQuestion();
+  window.scrollTo({ top: 0 });
+}
+function finish() {
+  done = true; persist();
+  $("quiz").hidden = true; $("result").hidden = false;
+  $("summary").innerHTML = QUESTIONS.map((q, i) => {
+    const v = (ans[q.key] || "").trim();
+    const shown = q.key === "group" ? (v ? `第 ${v} 組` : "") : v;
+    return `<button type="button" data-edit="${i}"><b>${LABELS[q.key]}</b><span>${esc(shown || "（略過）")}</span><em>修改</em></button>`;
+  }).join("");
+  $("summary").querySelectorAll("[data-edit]").forEach((b) => b.addEventListener("click", () => showQuiz(+b.dataset.edit)));
+  render();
+  window.scrollTo({ top: 0 });
+}
+$("restart").addEventListener("click", () => {
+  const b = $("restart");
+  if (b.dataset.armed) {
+    ans = {}; tiles = null;
+    $("drop").classList.remove("has");
+    $("dropTitle").textContent = "點這裡選擇圖片";
+    $("dropSub").textContent = "網頁會自動切成四格，配上你的文字";
+    $("file").value = "";
+    delete b.dataset.armed; b.textContent = "重新開始一組新故事";
+    showQuiz(0);
+  } else {
+    b.dataset.armed = "1"; b.textContent = "會清掉目前的內容，確定的話再按一次";
+    setTimeout(() => { delete b.dataset.armed; b.textContent = "重新開始一組新故事"; }, 3500);
+  }
+});
+
 function values() {
-  const v = {}; FIELDS.forEach((f) => { v[f] = $(f).value.trim(); }); return v;
+  const v = {}; Object.keys(LABELS).forEach((k) => { v[k] = (ans[k] || "").trim(); }); return v;
 }
 
 // 生圖指令
@@ -377,7 +541,7 @@ $("file").addEventListener("change", (e) => {
     $("dropTitle").textContent = "已放入圖片 ✓";
     $("dropSub").textContent = "想換一張？再點一次重新選擇";
     render();
-    $("h4").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("h3s").scrollIntoView({ behavior: "smooth", block: "start" });
   };
   img.onerror = () => {
     $("dropTitle").textContent = "這個檔案打不開";
@@ -436,9 +600,9 @@ function drawBoard(v) {
   const tag = "活動 10　AI 故事板", tw = ctx.measureText(tag).width + 56;
   ctx.fillStyle = "#141519"; roundRect(ctx, PAD, y, tw, 64, 32); ctx.fill();
   ctx.fillStyle = "#ffffff"; ctx.textBaseline = "middle"; ctx.fillText(tag, PAD + 28, y + 33);
-  if (v.who) {
-    ctx.font = `500 30px ${FONT}`; ctx.fillStyle = "#5c6070"; ctx.textAlign = "right";
-    ctx.fillText(v.who, W - PAD, y + 33); ctx.textAlign = "left";
+  if (v.group) {
+    ctx.font = `900 40px ${FONT}`; ctx.fillStyle = "#2b5ce6"; ctx.textAlign = "right";
+    ctx.fillText(`第 ${v.group} 組`, W - PAD, y + 33); ctx.textAlign = "left";
   }
   y += 64 + 16;
 
@@ -490,13 +654,13 @@ function drawBoard(v) {
   return cv;
 }
 
-let lastBlob = null, renderTimer = 0, renderSeq = 0;
+let lastBlob = null, renderSeq = 0;
 async function render() {
   const v = values();
   $("prompt").textContent = buildPrompt(v);
   const seq = ++renderSeq;
   // 先載入畫布要用到的字形，避免第一次畫成系統字
-  const text = Object.values(v).join("") + STAGES.map((s) => s.name + s.q).join("") + "活動故事板場景物件人物上傳圖片後會放在這裡的我";
+  const text = Object.values(v).join("") + STAGES.map((s) => s.name + s.q).join("") + "活動故事板場景物件人物上傳圖片後會放在這裡的我第組";
   try { await Promise.all(["400", "500", "700", "900"].map((w) => document.fonts.load(`${w} 32px "Noto Sans TC"`, text))); } catch (e) {}
   if (seq !== renderSeq) return;
   const cv = drawBoard(v);
@@ -509,13 +673,10 @@ async function render() {
     updateShare();
   }, "image/png");
 }
-function scheduleRender() { save(); clearTimeout(renderTimer); renderTimer = setTimeout(render, 300); }
-FIELDS.forEach((f) => $(f).addEventListener("input", scheduleRender));
 
 function fileName() {
-  const v = values();
-  const who = (v.who || v.scene || "").replace(/[\\/:*?"<>|\s]+/g, "");
-  return `AI故事板${who ? "-" + who : ""}.png`;
+  const g = values().group;
+  return `AI故事板${g ? "-第" + g + "組" : ""}.png`;
 }
 function boardFile() { return lastBlob ? new File([lastBlob], fileName(), { type: "image/png" }) : null; }
 function updateShare() {
@@ -546,19 +707,7 @@ $("copy").addEventListener("click", async () => {
   setTimeout(() => { $("copyMsg").textContent = ""; }, 4000);
 });
 
-$("clear").addEventListener("click", () => {
-  if ($("clear").dataset.armed) {
-    FIELDS.forEach((f) => { $(f).value = ""; });
-    delete $("clear").dataset.armed; $("clear").textContent = "清空重寫";
-    scheduleRender(); $("scene").focus();
-  } else {
-    $("clear").dataset.armed = "1"; $("clear").textContent = "確定清空？再按一次";
-    setTimeout(() => { delete $("clear").dataset.armed; $("clear").textContent = "清空重寫"; }, 3000);
-  }
-});
-
-load();
-render();
+if (done) finish(); else renderQuestion(false);
 </script>
 </body>
 </html>
