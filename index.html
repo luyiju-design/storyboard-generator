@@ -159,6 +159,10 @@ section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-w
 .summary span { min-width: 0; overflow-wrap: anywhere; }
 .summary em { font-style: normal; color: var(--accent); font-size: 13px; font-weight: 700; }
 
+.style-box { border: 1px solid var(--line); border-radius: 14px; padding: 4px 14px; }
+.style-box summary { cursor: pointer; font-weight: 700; padding: 10px 0; color: var(--accent); }
+.style-body { display: grid; gap: 10px; padding-bottom: 14px; }
+.style-body textarea { min-height: 150px; font-size: 15px; }
 .prompt {
   margin: 0;
   background: var(--soft);
@@ -238,6 +242,15 @@ section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-w
     <section aria-labelledby="h1s">
       <div class="step-head"><span class="step-no">1</span><h3 id="h1s">複製指令，貼到 AI 生圖</h3></div>
       <p class="hint">貼到 ChatGPT 或 Gemini，AI 會畫出一張四格圖。把圖存到手機相簿。</p>
+      <details class="style-box" id="styleBox">
+        <summary>調整畫風</summary>
+        <div class="style-body">
+          <p class="hint">點一個風格套用，或直接修改下面的文字。改完指令會自動更新。</p>
+          <div class="chips" id="styleChips"></div>
+          <textarea id="styleText" aria-label="畫風描述"></textarea>
+          <div><button type="button" class="ghost small" id="styleReset">還原預設畫風</button></div>
+        </div>
+      </details>
       <pre class="prompt" id="prompt"></pre>
       <div class="toolbar">
         <button type="button" class="blue" id="copy">複製生圖指令</button>
@@ -416,6 +429,7 @@ function finish() {
     return `<button type="button" data-edit="${i}"><b>${LABELS[q.key]}</b><span>${esc(shown || "（略過）")}</span><em>修改</em></button>`;
   }).join("");
   $("summary").querySelectorAll("[data-edit]").forEach((b) => b.addEventListener("click", () => showQuiz(+b.dataset.edit)));
+  renderStyle();
   render();
   window.scrollTo({ top: 0 });
 }
@@ -440,6 +454,40 @@ function values() {
 }
 
 // 主角：網頁隨機抽一位寫進指令，讓每組的角色不一樣
+// 畫風：可選預設，也可自己改
+const STYLES = [
+  { name: "手繪草圖", text: [
+    "・像設計師在筆記本上用黑色簽字筆快速畫的故事板草圖：線條潦草隨性、有點歪斜、看得出手繪筆觸，白色背景。",
+    "・人物是簡筆畫的卡通小人：有簡單的髮型和衣服輪廓，臉用點點眼睛和簡單線條畫出表情；不要畫成火柴人，也不要精緻的漫畫或寫實風格。",
+    "・只用黑色線條，不上色、不要灰階陰影或網點。"] },
+  { name: "火柴人", text: [
+    "・黑白手繪線條插畫，像用黑色簽字筆畫在白紙上，白色背景。",
+    "・人物是簡單的圓頭火柴人，用表情和動作表現情緒，不上色、不要灰階陰影。"] },
+  { name: "漫畫線稿", text: [
+    "・日系四格漫畫風格的黑白線稿，線條乾淨，白色背景，可以有少量灰色陰影，不要寫實照片感。",
+    "・人物是有五官、髮型和清楚表情的漫畫角色。"] },
+  { name: "淡彩插畫", text: [
+    "・溫暖的手繪淡彩插畫，像繪本一樣，白色背景，顏色柔和不刺眼。",
+    "・人物是可愛的卡通角色，有清楚的表情，不要寫實照片感。"] },
+].map((st) => ({ name: st.name, text: st.text.join("\n") }));
+const styleText = () => (typeof ans.style === "string" ? ans.style : STYLES[0].text);
+
+function renderStyle() {
+  const cur = styleText();
+  $("styleText").value = cur;
+  $("styleChips").innerHTML = STYLES.map((st, i) =>
+    `<button type="button" class="chip" data-style="${i}" aria-pressed="${st.text === cur}">${esc(st.name)}</button>`).join("");
+  $("styleChips").querySelectorAll("[data-style]").forEach((b) => b.addEventListener("click", () => {
+    ans.style = STYLES[+b.dataset.style].text; persist(); renderStyle(); refreshPrompt();
+  }));
+}
+function refreshPrompt() { $("prompt").textContent = buildPrompt(values()); }
+$("styleText").addEventListener("input", () => {
+  ans.style = $("styleText").value; persist(); refreshPrompt();
+  $("styleChips").querySelectorAll("[data-style]").forEach((b) => b.setAttribute("aria-pressed", STYLES[+b.dataset.style].text === ans.style));
+});
+$("styleReset").addEventListener("click", () => { delete ans.style; persist(); renderStyle(); refreshPrompt(); });
+
 const HEROES = [
   "綁馬尾的年輕女生，穿白襯衫、掛識別證",
   "戴眼鏡的短髮男生，穿襯衫打領帶",
@@ -473,9 +521,7 @@ function buildPrompt(v) {
     "・每一格都有清楚的黑色外框，格子之間留一點白色間距，整張圖外圍不要留大片空白。",
     "",
     "【風格】",
-    "・像設計師在筆記本上用黑色簽字筆快速畫的故事板草圖：線條潦草隨性、有點歪斜、看得出手繪筆觸，白色背景。",
-    "・人物是簡筆畫的卡通小人：有簡單的髮型和衣服輪廓，臉用點點眼睛和簡單線條畫出表情；不要畫成火柴人，也不要精緻的漫畫或寫實風格。",
-    "・只用黑色線條，不上色、不要灰階陰影或網點。",
+    ...styleText().split("\n").map((l) => l.trim()).filter(Boolean),
     `・主角是「${hero()}」，四格都是同一個主角，外型保持一致；其他配角可以自由搭配男女。`,
     "・圖中不要出現任何中文字、標題、說明文字、對話框或格子編號；招牌上必要時可用簡短英文（例如 BANK）。",
     "",
