@@ -132,9 +132,6 @@ button.wide { width: 100%; padding: 15px; font-size: 17px; }
 button[disabled] { opacity: .4; cursor: default; }
 
 /* 結果頁 */
-.result { display: grid; gap: 30px; min-width: 0; }
-.done-head h2 { margin: 0 0 4px; font-size: 26px; font-weight: 900; }
-.done-head p { margin: 0; color: var(--muted); }
 section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
 .step-head { display: flex; align-items: center; gap: 10px; }
 .step-no {
@@ -215,75 +212,79 @@ section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-w
     <div class="title-row"><span class="pill">活動 10</span><h1>繪製 AI 故事板</h1></div>
   </header>
 
-  <!-- 問答 -->
-  <div class="quiz" id="quiz">
+  <!-- 一步一步的流程：寫故事 8 題 → 確認 → 複製指令 → 上傳 → 完成 -->
+  <div class="quiz" id="flow">
     <div class="progress">
       <div class="progress-top"><span id="pLabel"></span><span id="pCount"></span></div>
       <div class="bar"><i id="pBar"></i></div>
     </div>
+
     <div class="q" id="q"></div>
-    <p class="err" id="err" role="alert"></p>
-    <div class="nav">
-      <button type="button" class="ghost" id="prev">上一題</button>
-      <span class="grow"></span>
-      <button type="button" class="link" id="skip" hidden>跳過</button>
-      <button type="button" class="blue" id="next">下一題</button>
-    </div>
-  </div>
 
-  <!-- 結果 -->
-  <div class="result" id="result" hidden>
-    <div class="done-head">
-      <h2>故事完成了！</h2>
-      <p>接下來讓 AI 幫你畫圖。想改哪一題，點一下就能回去修改。</p>
+    <div class="q" id="pConfirm" hidden>
+      <div class="q-tag">確認內容</div>
+      <h2>故事都寫好了嗎？</h2>
+      <p class="q-hint">想改哪一題，點一下就能回去修改。</p>
+      <div class="summary" id="summary"></div>
     </div>
-    <div class="summary" id="summary"></div>
 
-    <section aria-labelledby="h1s">
-      <div class="step-head"><span class="step-no">1</span><h3 id="h1s">複製指令，貼到 AI 生圖</h3></div>
-      <p class="hint">貼到 ChatGPT 或 Gemini，AI 會畫出一張四格圖。把圖存到手機相簿。</p>
+    <div class="q" id="pPrompt" hidden>
+      <div class="q-tag">讓 AI 畫圖</div>
+      <h2>複製指令，貼到 AI</h2>
+      <p class="q-hint">貼到 ChatGPT 或 Gemini，AI 會畫出一張四格圖。畫好後把圖存到手機相簿。</p>
+      <button type="button" class="blue wide" id="copy">複製生圖指令</button>
+      <p class="toast" id="copyMsg" role="status"></p>
+      <div class="links">
+        <a href="https://chatgpt.com/" target="_blank" rel="noopener">開啟 ChatGPT</a>
+        <a href="https://gemini.google.com/" target="_blank" rel="noopener">開啟 Gemini</a>
+      </div>
       <details class="style-box" id="styleBox">
-        <summary>調整畫風</summary>
+        <summary>調整畫風或主角</summary>
         <div class="style-body">
-          <p class="hint">點一個風格套用，或直接修改下面的文字。改完指令會自動更新。</p>
+          <p class="hint">點一個風格套用，或直接修改下面的文字。改完記得重新複製指令。</p>
           <div class="chips" id="styleChips"></div>
           <textarea id="styleText" aria-label="畫風描述"></textarea>
-          <div><button type="button" class="ghost small" id="styleReset">還原預設畫風</button></div>
+          <div class="toolbar">
+            <button type="button" class="ghost small" id="styleReset">還原預設畫風</button>
+            <button type="button" class="ghost small" id="reroll">換一個主角</button>
+          </div>
         </div>
       </details>
-      <pre class="prompt" id="prompt"></pre>
-      <div class="toolbar">
-        <button type="button" class="blue" id="copy">複製生圖指令</button>
-        <button type="button" class="ghost" id="reroll">換一個主角</button>
-        <div class="links">
-          <a href="https://chatgpt.com/" target="_blank" rel="noopener">開啟 ChatGPT</a>
-          <a href="https://gemini.google.com/" target="_blank" rel="noopener">開啟 Gemini</a>
-        </div>
-      </div>
-      <p class="toast" id="copyMsg" role="status"></p>
-    </section>
+      <details class="style-box">
+        <summary>查看完整指令</summary>
+        <div class="style-body"><pre class="prompt" id="prompt"></pre></div>
+      </details>
+    </div>
 
-    <section aria-labelledby="h2s">
-      <div class="step-head"><span class="step-no">2</span><h3 id="h2s">上傳 AI 畫好的四格圖</h3></div>
+    <div class="q" id="pUpload" hidden>
+      <div class="q-tag">放回圖片</div>
+      <h2>上傳 AI 畫好的四格圖</h2>
       <label class="upload" id="drop">
         <strong id="dropTitle">點這裡選擇圖片</strong>
         <span id="dropSub">網頁會自動切成四格，配上你的文字</span>
         <input type="file" id="file" accept="image/*">
       </label>
       <p class="tip">切得歪掉或對不齊？回到 AI 說「請重畫，四格大小一樣、每格都有黑色外框」，再上傳一次。</p>
-    </section>
+    </div>
 
-    <section aria-labelledby="h3s">
-      <div class="step-head"><span class="step-no">3</span><h3 id="h3s">完成，分享給 host</h3></div>
+    <div class="q" id="pDone" hidden>
+      <div class="q-tag">完成</div>
+      <h2>故事板完成了！</h2>
+      <p class="q-hint">分享給 host，或下載存起來。</p>
       <div class="board-out"><img id="boardImg" alt="故事板預覽"></div>
-      <div class="toolbar">
-        <button type="button" class="blue" id="share" hidden>分享（AirDrop／LINE／Mail）</button>
-        <button type="button" id="download">下載圖片</button>
-      </div>
+      <button type="button" class="blue wide" id="share" hidden>分享（AirDrop／LINE／Mail）</button>
+      <button type="button" class="wide" id="download">下載圖片</button>
       <p class="tip">也可以長按上面的圖片，選「儲存到照片」或「分享」。</p>
-    </section>
+      <button type="button" class="link" id="restart">重新開始一組新故事</button>
+    </div>
 
-    <button type="button" class="link" id="restart">重新開始一組新故事</button>
+    <p class="err" id="err" role="alert"></p>
+    <div class="nav">
+      <button type="button" class="ghost" id="prev">上一步</button>
+      <span class="grow"></span>
+      <button type="button" class="link" id="skip" hidden>跳過</button>
+      <button type="button" class="blue" id="next">下一題</button>
+    </div>
   </div>
 
 </main>
@@ -322,27 +323,46 @@ const LABELS = { group: "組別", scene: "場景", objects: "物件", people: "�
 const STORE = "storyboard-quiz-v2";
 const $ = (id) => document.getElementById(id);
 
-let ans = {}, step = 0, done = false;
+const PANELS = ["pConfirm", "pPrompt", "pUpload", "pDone"];
+const TOTAL = QUESTIONS.length + PANELS.length;
+let ans = {}, step = 0, returnTo = null;
 try {
   const saved = JSON.parse(localStorage.getItem(STORE));
-  if (saved) { ans = saved.ans || {}; step = saved.step || 0; done = !!saved.done; }
+  if (saved) { ans = saved.ans || {}; step = saved.step || 0; }
 } catch (e) {}
 function persist() {
-  try { localStorage.setItem(STORE, JSON.stringify({ ans, step, done })); } catch (e) {}
+  try { localStorage.setItem(STORE, JSON.stringify({ ans, step })); } catch (e) {}
 }
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const splitList = (s) => (s || "").split(/[、,，]\s*/).map((t) => t.trim()).filter(Boolean);
 
-function renderQuestion(animate = true) {
-  const q = QUESTIONS[step];
-  $("pLabel").textContent = "故事板問答";
-  $("pCount").textContent = `${step + 1} / ${QUESTIONS.length}`;
-  $("pBar").style.width = `${((step + 1) / QUESTIONS.length) * 100}%`;
+function renderStep(animate = true) {
+  $("pLabel").textContent = step < QUESTIONS.length ? "寫故事" : "做故事板";
+  $("pCount").textContent = `${step + 1} / ${TOTAL}`;
+  $("pBar").style.width = `${((step + 1) / TOTAL) * 100}%`;
   $("err").textContent = "";
   $("prev").style.visibility = step === 0 ? "hidden" : "visible";
+  ["q", ...PANELS].forEach((id) => { $(id).hidden = true; });
+  const box = step < QUESTIONS.length ? $("q") : $(PANELS[step - QUESTIONS.length]);
+  box.hidden = false;
+  box.classList.remove("q-enter");
+  if (animate) { void box.offsetWidth; box.classList.add("q-enter"); }
+  if (step < QUESTIONS.length) { renderQuestion(); return; }
+
+  const panel = PANELS[step - QUESTIONS.length];
+  $("skip").hidden = true;
+  $("next").hidden = panel === "pDone";
+  $("next").textContent = { pConfirm: "沒問題，下一步", pPrompt: "拿到圖了，下一步", pUpload: "下一步" }[panel] || "";
+  if (panel === "pConfirm") renderSummary();
+  if (panel === "pPrompt") { renderStyle(); refreshPrompt(); }
+  if (panel === "pDone") render();
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[step];
   $("skip").hidden = !!q.required;
-  $("next").textContent = step === QUESTIONS.length - 1 ? "完成" : "下一題";
+  $("next").textContent = returnTo !== null ? "回到確認頁" : step === QUESTIONS.length - 1 ? "寫完了" : "下一題";
   $("next").hidden = q.type === "group";
 
   const val = ans[q.key] || "";
@@ -364,8 +384,6 @@ function renderQuestion(animate = true) {
   }
   const box = $("q");
   box.innerHTML = body;
-  box.classList.remove("q-enter");
-  if (animate) { void box.offsetWidth; box.classList.add("q-enter"); }
 
   if (q.type === "group") {
     box.querySelectorAll("[data-n]").forEach((b) => b.addEventListener("click", () => {
@@ -399,39 +417,37 @@ function syncChips(q, v) {
 }
 
 function go(dir) {
-  const q = QUESTIONS[step];
-  if (dir > 0 && q.required && !(ans[q.key] || "").trim()) {
-    $("err").textContent = q.type === "group" ? "請點選你們的組別" : "這題要填喔，可以參考框裡的例子";
+  if (dir > 0 && step < QUESTIONS.length) {
+    const q = QUESTIONS[step];
+    if (q.required && !(ans[q.key] || "").trim()) {
+      $("err").textContent = q.type === "group" ? "請點選你們的組別" : "這題要填喔，可以參考框裡的例子";
+      return;
+    }
+    if (returnTo !== null) { step = returnTo; returnTo = null; persist(); renderStep(); return; }
+  }
+  if (dir > 0 && PANELS[step - QUESTIONS.length] === "pUpload" && !tiles) {
+    $("err").textContent = "請先上傳 AI 畫好的四格圖";
     return;
   }
-  if (dir > 0 && step === QUESTIONS.length - 1) { finish(); return; }
-  step = Math.max(0, Math.min(QUESTIONS.length - 1, step + dir));
+  if (dir < 0) returnTo = null;
+  step = Math.max(0, Math.min(TOTAL - 1, step + dir));
   persist();
-  renderQuestion();
+  renderStep();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 $("next").addEventListener("click", () => go(1));
 $("prev").addEventListener("click", () => go(-1));
 $("skip").addEventListener("click", () => { ans[QUESTIONS[step].key] = ""; go(1); });
 
-function showQuiz(at) {
-  done = false; step = at; persist();
-  $("result").hidden = true; $("quiz").hidden = false;
-  renderQuestion();
-  window.scrollTo({ top: 0 });
-}
-function finish() {
-  done = true; persist();
-  $("quiz").hidden = true; $("result").hidden = false;
+function renderSummary() {
   $("summary").innerHTML = QUESTIONS.map((q, i) => {
     const v = (ans[q.key] || "").trim();
     const shown = q.key === "group" ? (v ? `第 ${v} 組` : "") : v;
     return `<button type="button" data-edit="${i}"><b>${LABELS[q.key]}</b><span>${esc(shown || "（略過）")}</span><em>修改</em></button>`;
   }).join("");
-  $("summary").querySelectorAll("[data-edit]").forEach((b) => b.addEventListener("click", () => showQuiz(+b.dataset.edit)));
-  renderStyle();
-  render();
-  window.scrollTo({ top: 0 });
+  $("summary").querySelectorAll("[data-edit]").forEach((b) => b.addEventListener("click", () => {
+    returnTo = step; step = +b.dataset.edit; persist(); renderStep(); window.scrollTo({ top: 0 });
+  }));
 }
 $("restart").addEventListener("click", () => {
   const b = $("restart");
@@ -442,7 +458,7 @@ $("restart").addEventListener("click", () => {
     $("dropSub").textContent = "網頁會自動切成四格，配上你的文字";
     $("file").value = "";
     delete b.dataset.armed; b.textContent = "重新開始一組新故事";
-    showQuiz(0);
+    step = 0; returnTo = null; persist(); renderStep(); window.scrollTo({ top: 0 });
   } else {
     b.dataset.armed = "1"; b.textContent = "會清掉目前的內容，確定的話再按一次";
     setTimeout(() => { delete b.dataset.armed; b.textContent = "重新開始一組新故事"; }, 3500);
@@ -506,7 +522,7 @@ function rerollHero() {
   let n; do { n = Math.floor(Math.random() * HEROES.length); } while (n === ans.hero);
   ans.hero = n; persist();
   $("prompt").textContent = buildPrompt(values());
-  $("copyMsg").textContent = `換好了：${HEROES[n]}`;
+  $("copyMsg").textContent = `換好了：${HEROES[n]}，請重新複製指令`;
   setTimeout(() => { $("copyMsg").textContent = ""; }, 4000);
 }
 
@@ -611,8 +627,8 @@ $("file").addEventListener("change", (e) => {
     $("drop").classList.add("has");
     $("dropTitle").textContent = "已放入圖片 ✓";
     $("dropSub").textContent = "想換一張？再點一次重新選擇";
-    render();
-    $("h3s").scrollIntoView({ behavior: "smooth", block: "start" });
+    step = QUESTIONS.length + PANELS.indexOf("pDone"); persist();
+    renderStep(); window.scrollTo({ top: 0, behavior: "smooth" });
   };
   img.onerror = () => {
     $("dropTitle").textContent = "這個檔案打不開";
@@ -779,7 +795,10 @@ $("copy").addEventListener("click", async () => {
   setTimeout(() => { $("copyMsg").textContent = ""; }, 4000);
 });
 
-if (done) finish(); else renderQuestion(false);
+// 圖片不會存下來，重新整理後若停在完成頁，退回上傳那一步
+if (step >= TOTAL - 1) step = QUESTIONS.length + PANELS.indexOf("pUpload");
+step = Math.max(0, Math.min(TOTAL - 1, step));
+renderStep(false);
 </script>
 </body>
 </html>
