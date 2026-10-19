@@ -77,13 +77,15 @@ h1 { margin: 0; font-size: clamp(26px, 7vw, 34px); font-weight: 900; line-height
 .q-enter { animation: qin .28s ease both; }
 @keyframes qin { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
 
-.nums { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.foot { display: flex; align-items: center; gap: 12px; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--ink); font-size: 15px; font-weight: 600; }
+.foot img { display: block; height: 22px; width: auto; }
+.foot span { padding-left: 12px; border-left: 1px solid var(--line); }
+.nums { display: grid; gap: 10px; }
 .nums button {
-  aspect-ratio: 1;
-  font-size: 26px; font-weight: 700;
+  padding: 16px 20px; text-align: left;
+  font-size: 19px; font-weight: 700;
   border-radius: 14px;
   background: var(--soft); color: var(--ink); border: 2px solid transparent;
-  padding: 0;
 }
 .nums button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); }
 
@@ -338,6 +340,10 @@ button.copied { background: var(--ok); border-color: var(--ok); }
     </div>
   </div>
 
+  <footer class="foot">
+    <img src="ibm-logo.png" alt="IBM" width="60" height="22">
+    <span>IBM Consulting</span>
+  </footer>
 </main>
 
 <canvas id="board" hidden></canvas>
@@ -424,7 +430,7 @@ function renderQuestion() {
   if (q.hint) body += `<p class="q-hint">${esc(q.hint)}</p>`;
   if (q.type === "group") {
     body += `<div class="nums" role="group" aria-labelledby="qt">` +
-      Array.from({ length: 5 }, (_, i) => `<button type="button" data-n="${i + 1}" aria-pressed="${val == i + 1}">${i + 1}</button>`).join("") +
+      Array.from({ length: 5 }, (_, i) => `<button type="button" data-n="${i + 1}" aria-pressed="${val == i + 1}">第 ${i + 1} 組</button>`).join("") +
       `</div>`;
   } else {
     if (q.chips) {
