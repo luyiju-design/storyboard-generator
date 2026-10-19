@@ -256,20 +256,22 @@ button.copied { background: var(--ok); border-color: var(--ok); }
       <div class="summary" id="summary"></div>
     </div>
 
-    <div class="q" id="pStyle" hidden>
-      <div class="q-tag">選畫風</div>
-      <h2>想要哪一種畫風？</h2>
-      <div class="opts" id="styleOpts"></div>
-      <textarea id="styleText" aria-label="自己寫畫風" placeholder="例如：・像蠟筆畫的童趣風格，白色背景" hidden></textarea>
-      <div class="hero-row">
-        <span><b>主角</b><span id="heroName"></span></span>
-        <button type="button" class="ghost small" id="reroll">換一個</button>
-      </div>
-    </div>
-
     <div class="q" id="pPrompt" hidden>
       <div class="q-tag">讓 AI 畫圖</div>
       <h2>複製指令，貼到 AI</h2>
+      <pre class="prompt" id="prompt"></pre>
+      <details class="style-box" id="styleBox">
+        <summary>想換畫風或主角？</summary>
+        <div class="style-body">
+          <p class="hint">選好後上面的指令會自動更新，記得再按一次複製。</p>
+          <div class="opts" id="styleOpts"></div>
+          <textarea id="styleText" aria-label="自己寫畫風" placeholder="例如：・像蠟筆畫的童趣風格，白色背景" hidden></textarea>
+          <div class="hero-row">
+            <span><b>主角</b><span id="heroName"></span></span>
+            <button type="button" class="ghost small" id="reroll">換一個</button>
+          </div>
+        </div>
+      </details>
       <ol class="todo">
         <li><span class="n">1</span><div class="c"><b>複製生圖指令</b>
           <button type="button" class="blue wide" id="copy">複製生圖指令</button>
@@ -350,7 +352,7 @@ const LABELS = { group: "組別", scene: "場景", objects: "物件", people: "�
 const STORE = "storyboard-quiz-v2";
 const $ = (id) => document.getElementById(id);
 
-const PANELS = ["pConfirm", "pStyle", "pPrompt", "pUpload", "pDone"];
+const PANELS = ["pConfirm", "pPrompt", "pUpload", "pDone"];
 const TOTAL = QUESTIONS.length + PANELS.length;
 let ans = {}, step = 0, returnTo = null;
 try {
@@ -380,10 +382,9 @@ function renderStep(animate = true) {
   const panel = PANELS[step - QUESTIONS.length];
   $("skip").hidden = true;
   $("next").hidden = panel === "pDone";
-  $("next").textContent = { pConfirm: "沒問題，下一步", pStyle: "下一步", pPrompt: "拿到圖了，下一步", pUpload: "下一步" }[panel] || "";
+  $("next").textContent = { pConfirm: "沒問題，下一步", pPrompt: "拿到圖了，下一步", pUpload: "下一步" }[panel] || "";
   if (panel === "pConfirm") renderSummary();
-  if (panel === "pStyle") renderStyle();
-  if (panel === "pPrompt") { $("promptFallback").hidden = true; resetCopy(); }
+  if (panel === "pPrompt") { $("promptFallback").hidden = true; resetCopy(); renderStyle(); }
   if (panel === "pDone") render();
 }
 
@@ -535,8 +536,10 @@ function renderStyle() {
   $("styleText").hidden = !custom;
   if (custom && document.activeElement !== $("styleText")) $("styleText").value = preset < 0 ? cur : "";
   $("heroName").textContent = hero();
+  refreshPrompt();
 }
-$("styleText").addEventListener("input", () => { ans.style = $("styleText").value; ans.customStyle = true; persist(); });
+function refreshPrompt() { $("prompt").textContent = buildPrompt(values()); resetCopy(); }
+$("styleText").addEventListener("input", () => { ans.style = $("styleText").value; ans.customStyle = true; persist(); refreshPrompt(); });
 
 const HEROES = [
   "綁馬尾的年輕女生，穿白襯衫、掛識別證",
@@ -556,6 +559,7 @@ function rerollHero() {
   let n; do { n = Math.floor(Math.random() * HEROES.length); } while (n === ans.hero);
   ans.hero = n; persist();
   $("heroName").textContent = HEROES[n];
+  refreshPrompt();
 }
 
 // 生圖指令
