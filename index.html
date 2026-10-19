@@ -241,6 +241,7 @@ section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-w
       <pre class="prompt" id="prompt"></pre>
       <div class="toolbar">
         <button type="button" class="blue" id="copy">複製生圖指令</button>
+        <button type="button" class="ghost" id="reroll">換一個主角</button>
         <div class="links">
           <a href="https://chatgpt.com/" target="_blank" rel="noopener">開啟 ChatGPT</a>
           <a href="https://gemini.google.com/" target="_blank" rel="noopener">開啟 Gemini</a>
@@ -287,22 +288,22 @@ const STAGES = [
 const QUESTIONS = [
   { key: "group", tag: "開始之前", title: "你們是第幾組？", type: "group", required: true },
   { key: "scene", tag: "故事設定", title: "故事發生在哪裡？", type: "text", required: true,
-    hint: "點一個選項，或自己輸入", ph: "例如：銀行法遵部辦公室",
-    chips: ["銀行臨櫃", "法遵部辦公室", "客服中心", "分行 ATM 區", "在家用手機 App", "會議室"] },
+    hint: "點一個選項，或自己輸入", ph: "例如：OO 銀行裡",
+    chips: ["銀行臨櫃", "辦公室", "客服中心", "分行 ATM 區", "在家用手機 App", "會議室"] },
   { key: "objects", tag: "故事設定", title: "場景裡有哪些東西？", type: "multi",
-    hint: "可以複選，也可以自己補充", ph: "例如：電腦、法規文件、資料夾",
-    chips: ["電腦", "手機", "文件資料夾", "成堆的文件", "取號機", "顯示螢幕", "椅子", "印表機", "白板"] },
+    hint: "可以複選，也可以自己補充", ph: "例如：取號機、手機、椅子、顯示螢幕",
+    chips: ["電腦", "手機", "取號機", "顯示螢幕", "椅子", "文件資料夾", "印表機", "白板"] },
   { key: "people", tag: "故事設定", title: "故事裡有誰？", type: "multi",
-    hint: "可以複選，也可以自己補充", ph: "例如：法遵人員、業務同事",
-    chips: ["行員", "客戶", "主管", "同事", "法遵人員", "業務同事", "客服人員", "警衛"] },
+    hint: "可以複選，也可以自己補充", ph: "例如：警衛、行員、其他客人",
+    chips: ["行員", "客戶", "主管", "同事", "客服人員", "警衛"] },
   { key: "s1", tag: "第 1 格・情境", title: "主角在做什麼的時候？", type: "long", required: true,
-    ph: "例如：業務同事來問新商品是否合規，法遵人員要查相關法規" },
+    ph: "例如：在銀行臨櫃等待叫號" },
   { key: "s2", tag: "第 2 格・痛點", title: "這時候遇到了什麼問題？", type: "long", required: true,
-    ph: "例如：內外部法規分散各處，翻文件、找系統花了一整個下午" },
+    ph: "例如：很焦慮，不知道還要等多久" },
   { key: "s3", tag: "第 3 格・AI 介入", title: "AI 怎麼幫上忙？", type: "long", required: true,
-    ph: "例如：在 AI 法規助理輸入問題，幾秒內列出相關法條和內部規章出處" },
+    ph: "例如：手機收到 AI 通知：前面還有 8 位，大約 12 分鐘" },
   { key: "s4", tag: "第 4 格・結果", title: "最後變得怎麼樣？", type: "long", required: true,
-    ph: "例如：快速核對出處後回覆同事，省下的時間拿去做專業判斷" },
+    ph: "例如：安心去買杯咖啡，回來剛好輪到自己" },
 ];
 const LABELS = { group: "組別", scene: "場景", objects: "物件", people: "人物", s1: "情境", s2: "痛點", s3: "AI 介入", s4: "結果" };
 const STORE = "storyboard-quiz-v2";
@@ -438,6 +439,29 @@ function values() {
   const v = {}; Object.keys(LABELS).forEach((k) => { v[k] = (ans[k] || "").trim(); }); return v;
 }
 
+// 主角：網頁隨機抽一位寫進指令，讓每組的角色不一樣
+const HEROES = [
+  "綁馬尾的年輕女生，穿白襯衫、掛識別證",
+  "戴眼鏡的短髮男生，穿襯衫打領帶",
+  "及肩短髮的女生，穿西裝外套",
+  "捲髮的年輕男生，穿 polo 衫、掛識別證",
+  "戴眼鏡的長髮女生，穿針織衫",
+  "平頭的中年男生，穿西裝背心",
+  "綁包包頭的女生，穿襯衫配背心",
+  "旁分髮型的男生，穿深色西裝外套",
+];
+function hero() {
+  if (!(ans.hero >= 0 && ans.hero < HEROES.length)) { ans.hero = Math.floor(Math.random() * HEROES.length); persist(); }
+  return HEROES[ans.hero];
+}
+function rerollHero() {
+  let n; do { n = Math.floor(Math.random() * HEROES.length); } while (n === ans.hero);
+  ans.hero = n; persist();
+  $("prompt").textContent = buildPrompt(values());
+  $("copyMsg").textContent = `換好了：${HEROES[n]}`;
+  setTimeout(() => { $("copyMsg").textContent = ""; }, 4000);
+}
+
 // 生圖指令
 function buildPrompt(v) {
   const or = (x, d) => x || d;
@@ -449,9 +473,9 @@ function buildPrompt(v) {
     "・每一格都有清楚的黑色外框，格子之間留一點白色間距，整張圖外圍不要留大片空白。",
     "",
     "【風格】",
-    "・黑白手繪線條插畫，像用黑色簽字筆畫在白紙上，白色背景。",
-    "・人物是簡單的圓頭線條小人，有表情，不上色、不要灰階陰影、不要寫實。",
-    "・四格的主角是同一個人，外型保持一致。",
+    "・日系四格漫畫風格的黑白線稿，線條乾淨，白色背景，可以有少量灰色陰影，不要彩色、不要寫實照片感。",
+    "・人物是有五官、髮型和清楚表情的漫畫角色（不要畫成火柴人）。",
+    `・主角是「${hero()}」，四格都是同一個主角，外型保持一致；其他配角可以自由搭配男女。`,
     "・圖中不要出現任何中文字、標題、說明文字、對話框或格子編號；招牌上必要時可用簡短英文（例如 BANK）。",
     "",
     "【故事設定】",
@@ -696,6 +720,7 @@ $("download").addEventListener("click", () => {
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 });
 
+$("reroll").addEventListener("click", rerollHero);
 $("copy").addEventListener("click", async () => {
   const text = $("prompt").textContent;
   try { await navigator.clipboard.writeText(text); $("copyMsg").textContent = "已複製，打開 ChatGPT 或 Gemini 貼上就好"; }
