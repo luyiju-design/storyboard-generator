@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI 故事板產生器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<style>
+/* 版面：單欄手機流程，四個步驟由上而下；配色沿用工作坊簡報（白底、墨黑膠囊、亮藍強調） */
+:root {
+  --bg: #ffffff;
+  --ink: #141519;
+  --muted: #5c6070;
+  --line: #dfe2ea;
+  --soft: #f4f6fb;
+  --accent: #2b5ce6;
+  --accent-ink: #ffffff;
+  --ok: #1d8a52;
+  --font: "Noto Sans TC", "PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.6 var(--font);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+body::after {
+  content: "";
+  position: fixed;
+  top: -160px; right: -160px;
+  width: 420px; height: 420px;
+  background: radial-gradient(circle, rgba(43,92,230,.22), rgba(60,200,220,.12) 45%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+.wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 28px;
+}
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+.brand svg { width: 20px; height: 20px; color: var(--accent); }
+.pill {
+  display: inline-block;
+  background: var(--ink); color: var(--bg);
+  border-radius: 999px; padding: 4px 18px;
+  font-weight: 700; font-size: 15px;
+}
+h1 { margin: 10px 0 6px; font-size: clamp(32px, 9vw, 44px); font-weight: 900; line-height: 1.15; text-wrap: balance; }
+.lead { margin: 0; color: var(--muted); }
+.lead b { color: var(--accent); }
+
+section, .card, .field { min-width: 0; }
+section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.step-head { display: flex; align-items: baseline; gap: 10px; }
+.step-no {
+  flex: none;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-ink);
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 14px;
+}
+h2 { margin: 0; font-size: 20px; font-weight: 700; }
+.hint { margin: 0; color: var(--muted); font-size: 14px; }
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  background: var(--bg);
+}
+.field { display: grid; gap: 6px; }
+label { font-weight: 700; font-size: 15px; }
+label small { font-weight: 400; color: var(--muted); margin-left: 4px; }
+input[type=text], textarea {
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+textarea { resize: vertical; min-height: 64px; }
+input:focus, textarea:focus, button:focus-visible, .upload:focus-within {
+  outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  outline-offset: 1px;
+}
+.row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+@media (max-width: 420px) { .row2 { grid-template-columns: 1fr; } }
+
+.stage-tag { color: var(--accent); }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+button {
+  font: inherit; font-weight: 700;
+  border-radius: 999px;
+  padding: 11px 20px;
+  cursor: pointer;
+  border: 1px solid var(--ink);
+  background: var(--ink); color: var(--bg);
+}
+button.blue { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+button.small { padding: 6px 14px; font-size: 14px; }
+button[disabled] { opacity: .45; cursor: default; }
+
+.prompt {
+  margin: 0;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 260px;
+  overflow: auto;
+  user-select: all;
+  -webkit-user-select: all;
+}
+.links { display: flex; flex-wrap: wrap; gap: 8px; font-size: 14px; }
+.links a { color: var(--accent); font-weight: 700; text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; }
+
+.upload {
+  position: relative;
+  border: 2px dashed var(--line);
+  border-radius: 16px;
+  padding: 22px 16px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--soft);
+}
+.upload strong { display: block; color: var(--ink); font-size: 17px; }
+.upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.upload.has { border-style: solid; border-color: var(--ok); }
+.upload.has strong { color: var(--ok); }
+
+.board-out {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+.board-out img { display: block; width: 100%; height: auto; }
+.toast { min-height: 1.4em; margin: 0; font-size: 14px; color: var(--ok); font-weight: 700; }
+.tip {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  background: var(--soft);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+@media (prefers-reduced-motion: no-preference) { button { transition: transform .1s; } button:active { transform: scale(.97); } }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 1l2.1 3.6 4.1-.9-.6 4.1L21.3 10l-2.9 3 1.3 3.9-4.1.4L14 21l-2-3.6L10 21l-1.6-3.7-4.1-.4L5.6 13 2.7 10l3.7-2.2-.6-4.1 4.1.9z"/></svg>
+      Design Thinking for AI
+    </div>
+    <div style="margin-top:22px"><span class="pill">活動 10</span></div>
+    <h1>繪製 AI 故事板</h1>
+    <p class="lead">寫下四個階段，讓 AI 幫你畫圖，<b>圖像搭配文字描述</b>，讓大家都能直覺看懂。</p>
+  </header>
+
+  <!-- 步驟 1 -->
+  <section aria-labelledby="h1">
+    <div class="step-head"><span class="step-no">1</span><h2 id="h1">寫下你的故事</h2></div>
+    <p class="hint">已先放入一組銀行的範例，直接改成你們的內容即可。</p>
+    <div class="card">
+      <div class="row2">
+        <div class="field"><label for="who">組別／姓名 <small>選填</small></label><input type="text" id="who" placeholder="例如：第 3 組 小美"></div>
+        <div class="field"><label for="scene">場景</label><input type="text" id="scene" placeholder="例如：OO 銀行裡"></div>
+      </div>
+      <div class="field"><label for="objects">該場景有什麼物件</label><input type="text" id="objects" placeholder="例如：取號機、手機、椅子"></div>
+      <div class="field"><label for="people">人物有誰</label><input type="text" id="people" placeholder="例如：警衛、行員、其他客人"></div>
+    </div>
+    <div class="card" id="stages"></div>
+    <div class="toolbar"><button type="button" class="ghost small" id="clear">清空重寫</button></div>
+  </section>
+
+  <!-- 步驟 2 -->
+  <section aria-labelledby="h2">
+    <div class="step-head"><span class="step-no">2</span><h2 id="h2">複製指令，貼到 AI 生圖</h2></div>
+    <p class="hint">貼到 ChatGPT 或 Gemini，AI 會畫出一張四格圖。把圖存到手機相簿。</p>
+    <pre class="prompt" id="prompt"></pre>
+    <div class="toolbar">
+      <button type="button" class="blue" id="copy">複製生圖指令</button>
+      <div class="links">
+        <a href="https://chatgpt.com/" target="_blank" rel="noopener">開啟 ChatGPT</a>
+        <a href="https://gemini.google.com/" target="_blank" rel="noopener">開啟 Gemini</a>
+      </div>
+    </div>
+    <p class="toast" id="copyMsg" role="status"></p>
+  </section>
+
+  <!-- 步驟 3 -->
+  <section aria-labelledby="h3">
+    <div class="step-head"><span class="step-no">3</span><h2 id="h3">上傳 AI 畫好的四格圖</h2></div>
+    <label class="upload" id="drop">
+      <strong id="dropTitle">點這裡選擇圖片</strong>
+      <span id="dropSub">網頁會自動切成四格，配上你的文字</span>
+      <input type="file" id="file" accept="image/*">
+    </label>
+    <p class="tip">切得歪掉或對不齊？回到 AI 說「請重畫，四格大小一樣、每格都有黑色外框」，再上傳一次。</p>
+  </section>
+
+  <!-- 步驟 4 -->
+  <section aria-labelledby="h4">
+    <div class="step-head"><span class="step-no">4</span><h2 id="h4">完成，分享給 host</h2></div>
+    <div class="board-out"><img id="boardImg" alt="故事板預覽"></div>
+    <div class="toolbar">
+      <button type="button" class="blue" id="share" hidden>分享（AirDrop／LINE／Mail）</button>
+      <button type="button" id="download">下載圖片</button>
+    </div>
+    <p class="tip">也可以長按上面的圖片，選「儲存到照片」或「分享」。</p>
+  </section>
+
+</main>
+
+<canvas id="board" hidden></canvas>
+
+<script>
+const STAGES = [
+  { key: "s1", name: "情境", q: "在做什麼的時候", pos: "左上", ex: "在銀行臨櫃等待叫號" },
+  { key: "s2", name: "痛點", q: "發生了什麼問題", pos: "右上", ex: "很焦慮不知道要等多久" },
+  { key: "s3", name: "AI 介入", q: "AI 怎麼幫忙", pos: "左下", ex: "手機收到 AI 通知：前面還有 8 位，約 12 分鐘" },
+  { key: "s4", name: "結果", q: "最後變得怎麼樣", pos: "右下", ex: "安心去買杯咖啡，回來剛好輪到自己" },
+];
+const EXAMPLE = { who: "", scene: "OO 銀行裡", objects: "取號機、手機、椅子、顯示螢幕", people: "警衛、行員、其他客人",
+  s1: STAGES[0].ex, s2: STAGES[1].ex, s3: STAGES[2].ex, s4: STAGES[3].ex };
+const FIELDS = ["who", "scene", "objects", "people", "s1", "s2", "s3", "s4"];
+const STORE = "storyboard-draft-v1";
+
+const $ = (id) => document.getElementById(id);
+
+// 四格輸入框
+$("stages").innerHTML = STAGES.map((s, i) => `
+  <div class="field">
+    <label for="${s.key}"><span class="stage-tag">${i + 1}．${s.name}</span>：${s.q}</label>
+    <textarea id="${s.key}" rows="2"></textarea>
+  </div>`).join("");
+
+function load() {
+  let data = EXAMPLE;
+  try { const saved = JSON.parse(localStorage.getItem(STORE)); if (saved) data = saved; } catch (e) {}
+  FIELDS.forEach((f) => { $(f).value = data[f] || ""; });
+}
+function save() {
+  try { localStorage.setItem(STORE, JSON.stringify(values())); } catch (e) {}
+}
+function values() {
+  const v = {}; FIELDS.forEach((f) => { v[f] = $(f).value.trim(); }); return v;
+}
+
+// 生圖指令
+function buildPrompt(v) {
+  const or = (x, d) => x || d;
+  return [
+    "請幫我畫一張「2×2 四格」的故事板插圖。",
+    "",
+    "【版面】",
+    "・整張圖是正方形，平均分成左上、右上、左下、右下四格，四格大小完全相同。",
+    "・每一格都有清楚的黑色外框，格子之間留一點白色間距，整張圖外圍不要留大片空白。",
+    "",
+    "【風格】",
+    "・黑白手繪線條插畫，像用黑色簽字筆畫在白紙上，白色背景。",
+    "・人物是簡單的圓頭線條小人，有表情，不上色、不要灰階陰影、不要寫實。",
+    "・四格的主角是同一個人，外型保持一致。",
+    "・圖中不要出現任何中文字、標題、說明文字、對話框或格子編號；招牌上必要時可用簡短英文（例如 BANK）。",
+    "",
+    "【故事設定】",
+    `・場景：${or(v.scene, "（未填）")}`,
+    `・畫面中的物件：${or(v.objects, "（自由發揮）")}`,
+    `・出現的人物：${or(v.people, "（自由發揮）")}`,
+    "",
+    "【四格內容】",
+    ...STAGES.map((s, i) => `${i + 1}. ${s.pos}｜${s.name}（${s.q}）：${or(v[s.key], "（未填）")}`),
+  ].join("\n");
+}
+
+// 上傳的四格圖 → 切成四塊
+let tiles = null;
+
+function findContentBox(img) {
+  const max = 600;
+  const scale = Math.min(1, max / Math.max(img.width, img.height));
+  const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0, w, h);
+  const px = ctx.getImageData(0, 0, w, h).data;
+  // 某一列／行有足夠多深色像素才算內容，避免雜點
+  const dark = (i) => (px[i] * 0.3 + px[i + 1] * 0.59 + px[i + 2] * 0.11) < 170;
+  const rowHit = new Array(h).fill(0), colHit = new Array(w).fill(0);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    if (dark((y * w + x) * 4)) { rowHit[y]++; colHit[x]++; }
+  }
+  const minR = w * 0.02, minC = h * 0.02;
+  let top = rowHit.findIndex((n) => n > minR), bottom = h - 1 - [...rowHit].reverse().findIndex((n) => n > minR);
+  let left = colHit.findIndex((n) => n > minC), right = w - 1 - [...colHit].reverse().findIndex((n) => n > minC);
+  if (top < 0 || left < 0 || right - left < w * 0.5 || bottom - top < h * 0.5) {
+    return { x: 0, y: 0, w: img.width, h: img.height };
+  }
+  return { x: left / scale, y: top / scale, w: (right - left + 1) / scale, h: (bottom - top + 1) / scale };
+}
+
+function cutTiles(img) {
+  const b = findContentBox(img);
+  const tw = b.w / 2, th = b.h / 2;
+  const inset = 0.015; // 去掉格線與間距
+  const out = [];
+  for (let r = 0; r < 2; r++) for (let col = 0; col < 2; col++) {
+    const sx = b.x + col * tw + tw * inset, sy = b.y + r * th + th * inset;
+    const sw = tw * (1 - inset * 2), sh = th * (1 - inset * 2);
+    const c = document.createElement("canvas");
+    c.width = Math.round(sw); c.height = Math.round(sh);
+    c.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    out.push(stripFrame(c));
+  }
+  return out;
+}
+
+// 每格再去掉自己的黑色外框：從四邊往內，略過白邊，再略過框線；沒找到框線就不裁
+function stripFrame(c) {
+  const w = c.width, h = c.height;
+  const px = c.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, w, h).data;
+  const dark = (x, y) => { const i = (y * w + x) * 4; return (px[i] * 0.3 + px[i + 1] * 0.59 + px[i + 2] * 0.11) < 140; };
+  const rowFrac = (y) => { let n = 0; for (let x = 0; x < w; x++) n += dark(x, y); return n / w; };
+  const colFrac = (x) => { let n = 0; for (let y = 0; y < h; y++) n += dark(x, y); return n / h; };
+  function edge(len, frac, from, dir) {
+    let i = from, limit = Math.round(len * 0.12);
+    while (Math.abs(i - from) < limit && frac(i) < 0.02) i += dir;   // 白邊
+    if (frac(i) < 0.5) return from;                                    // 沒有框線
+    while (Math.abs(i - from) < limit + 20 && frac(i) >= 0.5) i += dir; // 框線
+    return i + dir * Math.round(len * 0.01);                           // 再留一點距離
+  }
+  const top = edge(h, rowFrac, 0, 1), bottom = edge(h, rowFrac, h - 1, -1);
+  const left = edge(w, colFrac, 0, 1), right = edge(w, colFrac, w - 1, -1);
+  if (right - left < w * 0.6 || bottom - top < h * 0.6) return c;
+  const o = document.createElement("canvas");
+  o.width = right - left + 1; o.height = bottom - top + 1;
+  o.getContext("2d").drawImage(c, left, top, o.width, o.height, 0, 0, o.width, o.height);
+  return o;
+}
+
+$("file").addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const url = URL.createObjectURL(f);
+  const img = new Image();
+  img.onload = () => {
+    tiles = cutTiles(img);
+    URL.revokeObjectURL(url);
+    $("drop").classList.add("has");
+    $("dropTitle").textContent = "已放入圖片 ✓";
+    $("dropSub").textContent = "想換一張？再點一次重新選擇";
+    render();
+    $("h4").scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  img.onerror = () => {
+    $("dropTitle").textContent = "這個檔案打不開";
+    $("dropSub").textContent = "請選 JPG 或 PNG 圖片";
+  };
+  img.src = url;
+});
+
+// 合成故事板
+const W = 1600, PAD = 72, GAP = 40;
+const CARD_W = (W - PAD * 2 - GAP) / 2, CARD_PAD = 32, IMG = CARD_W - CARD_PAD * 2;
+const FONT = '"Noto Sans TC", "PingFang TC", "Heiti TC", "Microsoft JhengHei", sans-serif';
+
+function wrapLines(ctx, text, maxW, maxLines) {
+  const lines = []; let line = "";
+  for (const ch of text) {
+    if (ch === "\n") { lines.push(line); line = ""; continue; }
+    if (ctx.measureText(line + ch).width > maxW && line) { lines.push(line); line = ch; }
+    else line += ch;
+  }
+  if (line) lines.push(line);
+  if (lines.length > maxLines) {
+    lines.length = maxLines;
+    let last = lines[maxLines - 1];
+    while (ctx.measureText(last + "…").width > maxW && last) last = last.slice(0, -1);
+    lines[maxLines - 1] = last + "…";
+  }
+  return lines;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+function drawBoard(v) {
+  const cv = $("board"), ctx = cv.getContext("2d");
+  const capSize = 32, capLH = 46, capLines = 3;
+  const cardH = CARD_PAD + 40 + 20 + IMG + 24 + capLH * capLines + CARD_PAD - 10;
+
+  // 頁首高度
+  const metaRows = [["場景", v.scene], ["物件", v.objects], ["人物", v.people]].filter((r) => r[1]);
+  const headerH = 64 + 16 + 76 + metaRows.length * 52 + 28;
+  const H = PAD + headerH + cardH * 2 + GAP + PAD;
+  cv.width = W; cv.height = H;
+
+  ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+  const g = ctx.createRadialGradient(W - 40, 40, 0, W - 40, 40, 520);
+  g.addColorStop(0, "rgba(43,92,230,0.20)"); g.addColorStop(0.5, "rgba(60,200,220,0.10)"); g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  let y = PAD;
+  // 膠囊標籤
+  ctx.font = `700 30px ${FONT}`;
+  const tag = "活動 10　AI 故事板", tw = ctx.measureText(tag).width + 56;
+  ctx.fillStyle = "#141519"; roundRect(ctx, PAD, y, tw, 64, 32); ctx.fill();
+  ctx.fillStyle = "#ffffff"; ctx.textBaseline = "middle"; ctx.fillText(tag, PAD + 28, y + 33);
+  if (v.who) {
+    ctx.font = `500 30px ${FONT}`; ctx.fillStyle = "#5c6070"; ctx.textAlign = "right";
+    ctx.fillText(v.who, W - PAD, y + 33); ctx.textAlign = "left";
+  }
+  y += 64 + 16;
+
+  ctx.textBaseline = "alphabetic";
+  ctx.font = `900 60px ${FONT}`; ctx.fillStyle = "#141519";
+  ctx.fillText(v.scene ? `${v.scene}的故事` : "我的 AI 故事板", PAD, y + 62);
+  y += 76 + 10;
+
+  for (const [k, val] of metaRows) {
+    ctx.font = `500 30px ${FONT}`; ctx.fillStyle = "#5c6070";
+    ctx.fillText(`${k}：`, PAD, y + 34);
+    const kw = ctx.measureText(`${k}：`).width;
+    ctx.font = `700 30px ${FONT}`; ctx.fillStyle = "#2b5ce6";
+    const line = wrapLines(ctx, val, W - PAD * 2 - kw, 1)[0];
+    ctx.fillText(line, PAD + kw, y + 34);
+    y += 52;
+  }
+  y = PAD + headerH;
+
+  STAGES.forEach((s, i) => {
+    const cx = PAD + (i % 2) * (CARD_W + GAP), cy = y + Math.floor(i / 2) * (cardH + GAP);
+    ctx.save();
+    ctx.shadowColor = "rgba(20,21,25,0.08)"; ctx.shadowBlur = 24; ctx.shadowOffsetY = 6;
+    ctx.fillStyle = "#ffffff"; roundRect(ctx, cx, cy, CARD_W, cardH, 24); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = "#dfe2ea"; ctx.lineWidth = 2; roundRect(ctx, cx, cy, CARD_W, cardH, 24); ctx.stroke();
+
+    ctx.font = `700 32px ${FONT}`; ctx.fillStyle = "#141519";
+    ctx.fillText(`${s.name}：${s.q}`, cx + CARD_PAD, cy + CARD_PAD + 32);
+
+    const ix = cx + CARD_PAD, iy = cy + CARD_PAD + 40 + 20;
+    ctx.fillStyle = "#f4f6fb"; ctx.fillRect(ix, iy, IMG, IMG);
+    if (tiles) {
+      const t = tiles[i], sc = Math.min(IMG / t.width, IMG / t.height);
+      const dw = t.width * sc, dh = t.height * sc;
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(ix, iy, IMG, IMG);
+      ctx.drawImage(t, ix + (IMG - dw) / 2, iy + (IMG - dh) / 2, dw, dh);
+      ctx.strokeStyle = "#dfe2ea"; ctx.lineWidth = 2; ctx.strokeRect(ix, iy, IMG, IMG);
+    } else {
+      ctx.strokeStyle = "#c9cede"; ctx.setLineDash([12, 10]); ctx.strokeRect(ix + 1, iy + 1, IMG - 2, IMG - 2); ctx.setLineDash([]);
+      ctx.font = `500 28px ${FONT}`; ctx.fillStyle = "#8a8fa0"; ctx.textAlign = "center";
+      ctx.fillText("上傳 AI 圖片後會放在這裡", ix + IMG / 2, iy + IMG / 2); ctx.textAlign = "left";
+    }
+
+    ctx.font = `400 ${capSize}px ${FONT}`; ctx.fillStyle = "#141519";
+    const lines = wrapLines(ctx, v[s.key] || "", IMG, capLines);
+    lines.forEach((ln, li) => ctx.fillText(ln, ix, iy + IMG + 24 + 34 + li * capLH));
+  });
+  return cv;
+}
+
+let lastBlob = null, renderTimer = 0, renderSeq = 0;
+async function render() {
+  const v = values();
+  $("prompt").textContent = buildPrompt(v);
+  const seq = ++renderSeq;
+  // 先載入畫布要用到的字形，避免第一次畫成系統字
+  const text = Object.values(v).join("") + STAGES.map((s) => s.name + s.q).join("") + "活動故事板場景物件人物上傳圖片後會放在這裡的我";
+  try { await Promise.all(["400", "500", "700", "900"].map((w) => document.fonts.load(`${w} 32px "Noto Sans TC"`, text))); } catch (e) {}
+  if (seq !== renderSeq) return;
+  const cv = drawBoard(v);
+  cv.toBlob((blob) => {
+    if (seq !== renderSeq || !blob) return;
+    lastBlob = blob;
+    const old = $("boardImg").src;
+    $("boardImg").src = URL.createObjectURL(blob);
+    if (old.startsWith("blob:")) URL.revokeObjectURL(old);
+    updateShare();
+  }, "image/png");
+}
+function scheduleRender() { save(); clearTimeout(renderTimer); renderTimer = setTimeout(render, 300); }
+FIELDS.forEach((f) => $(f).addEventListener("input", scheduleRender));
+
+function fileName() {
+  const v = values();
+  const who = (v.who || v.scene || "").replace(/[\\/:*?"<>|\s]+/g, "");
+  return `AI故事板${who ? "-" + who : ""}.png`;
+}
+function boardFile() { return lastBlob ? new File([lastBlob], fileName(), { type: "image/png" }) : null; }
+function updateShare() {
+  const f = boardFile();
+  $("share").hidden = !(f && navigator.canShare && navigator.canShare({ files: [f] }));
+}
+
+$("share").addEventListener("click", async () => {
+  const f = boardFile(); if (!f) return;
+  try { await navigator.share({ files: [f], title: "AI 故事板" }); } catch (e) {}
+});
+$("download").addEventListener("click", () => {
+  if (!lastBlob) return;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(lastBlob); a.download = fileName();
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+});
+
+$("copy").addEventListener("click", async () => {
+  const text = $("prompt").textContent;
+  try { await navigator.clipboard.writeText(text); $("copyMsg").textContent = "已複製，打開 ChatGPT 或 Gemini 貼上就好"; }
+  catch (e) {
+    const r = document.createRange(); r.selectNodeContents($("prompt"));
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    $("copyMsg").textContent = "已幫你選取指令，請按「拷貝」";
+  }
+  setTimeout(() => { $("copyMsg").textContent = ""; }, 4000);
+});
+
+$("clear").addEventListener("click", () => {
+  if ($("clear").dataset.armed) {
+    FIELDS.forEach((f) => { $(f).value = ""; });
+    delete $("clear").dataset.armed; $("clear").textContent = "清空重寫";
+    scheduleRender(); $("scene").focus();
+  } else {
+    $("clear").dataset.armed = "1"; $("clear").textContent = "確定清空？再按一次";
+    setTimeout(() => { delete $("clear").dataset.armed; $("clear").textContent = "清空重寫"; }, 3000);
+  }
+});
+
+load();
+render();
+</script>
+</body>
+</html>
