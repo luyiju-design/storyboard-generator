@@ -188,6 +188,7 @@ section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-w
 .mail-addr { flex: 1 1 auto; min-width: 0; font-size: 17px; font-weight: 700; overflow-wrap: anywhere; user-select: all; -webkit-user-select: all; }
 .mail-to button { flex: 0 0 auto; }
 #noShare { display: grid; gap: 10px; }
+.inapp { margin: 0 0 16px; padding: 12px 14px; border-radius: 12px; background: var(--warn); color: #fff; font-size: 15px; line-height: 1.6; }
 .mail-steps { margin: 0; padding-left: 22px; display: grid; gap: 6px; font-size: 15px; line-height: 1.6; color: var(--ink); }
 .btn-link { display: block; text-align: center; text-decoration: none; color: var(--accent); border: 1px solid var(--line); border-radius: 12px; padding: 12px; font-weight: 600; }
 button.copied { background: var(--ok); border-color: var(--ok); }
@@ -239,6 +240,7 @@ button.copied { background: var(--ok); border-color: var(--ok); }
 <body>
 <main class="wrap">
 
+  <div class="inapp" id="inapp" hidden>你現在是在 <b id="inappName">App</b> 裡打開的，最後可能存不了圖。請點右上角「⋯」，選「用瀏覽器開啟」（Chrome 或 Safari）再開始填。</div>
   <header>
     <div class="brand">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 1l2.1 3.6 4.1-.9-.6 4.1L21.3 10l-2.9 3 1.3 3.9-4.1.4L14 21l-2-3.6L10 21l-1.6-3.7-4.1-.4L5.6 13 2.7 10l3.7-2.2-.6-4.1 4.1.9z"/></svg>
@@ -313,17 +315,17 @@ button.copied { background: var(--ok); border-color: var(--ok); }
         <span class="mail-addr" id="hostMail"></span>
         <button type="button" id="copyMail">複製信箱</button>
       </div>
-      <button type="button" class="blue wide" id="share" hidden>用郵件寄出</button>
+      <button type="button" class="blue wide" id="share" hidden>分享／寄出</button>
       <ol class="mail-steps" id="shareSteps" hidden>
-        <li>按「用郵件寄出」，選「郵件」（Mail 或 Gmail）</li>
+        <li>按「分享／寄出」，選 Gmail 或「郵件」</li>
         <li>在收件人欄長按「貼上」（信箱已自動複製）</li>
-        <li>圖片已自動附在信裡，按送出</li>
+        <li>圖片已自動附上，按送出</li>
       </ol>
       <div id="noShare" hidden>
         <button type="button" class="blue wide" id="download">下載圖片</button>
         <a class="wide btn-link" id="mailLink">打開郵件，附上剛下載的圖片</a>
       </div>
-      <p class="tip">寄不出去的話，也可以長按上面的圖片儲存，再用 LINE 或 AirDrop 傳給 host。</p>
+      <p class="tip">沒有信箱也沒關係：分享時改選 LINE 傳給 host，或長按上面的圖片儲存後再傳。</p>
       <button type="button" class="link" id="restart">重新開始一組新故事</button>
     </div>
 
@@ -372,6 +374,8 @@ const LABELS = { group: "組別", scene: "場景", objects: "物件", people: "�
 const STORE = "storyboard-quiz-v2";
 const $ = (id) => document.getElementById(id);
 
+const INAPP = [[/Line\//i, "LINE"], [/FBAN|FBAV|FB_IAB/i, "Facebook"], [/Instagram/i, "Instagram"], [/MicroMessenger/i, "微信"]].find(([re]) => re.test(navigator.userAgent));
+if (INAPP) { $("inappName").textContent = INAPP[1]; $("inapp").hidden = false; }
 const HOST_EMAIL = "Phoebe.Chen@ibm.com";
 const PANELS = ["pConfirm", "pPrompt", "pUpload", "pDone"];
 const TOTAL = QUESTIONS.length + PANELS.length;
